@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -348,7 +348,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return _AuthLayout(children: [
       FcText('WELCOME BACK', kind: Tx.label, color: FC.gold),
-      const FcText('Sign in to FuelConnect', kind: Tx.title),
+      const FcText('Sign in to FuelOnDemand', kind: Tx.title),
       FcText('Fuel from trusted stations, delivered wherever you are.', color: FC.muted),
       FcField(label: 'Phone number', hint: '+256 700 123 456', icon: IconName.phone, controller: _phone, keyboard: TextInputType.phone, error: _phoneErr, action: TextInputAction.next),
       FcField(label: 'Password', hint: 'Enter your password', icon: IconName.shield, password: true, controller: _pass, error: _passErr, action: TextInputAction.done, onSubmitted: (_) => _submit()),
@@ -357,7 +357,7 @@ class _LoginScreenState extends State<LoginScreen> {
       FcButton('Sign in securely', loading: _busy, onTap: _submit),
       const _Divider('or continue with'),
       FcButton('Continue with Google', variant: BV.outline, onTap: () => toast(context, 'Google sign-in will be available once the backend is connected.')),
-      _InlineLink('New to FuelConnect?', 'Create account', () => widget.go(Screen.signup)),
+      _InlineLink('New to FuelOnDemand?', 'Create account', () => widget.go(Screen.signup)),
     ]);
   }
 }
@@ -416,9 +416,9 @@ class _SignupScreenState extends State<SignupScreen> {
       header: PageHeader(title: 'Create account', goBack: () => app.backOr(Screen.login)),
       body: Narrow(gap: 20, children: [
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          FcText('JOIN FUELCONNECT', kind: Tx.label, color: FC.gold),
+          FcText('JOIN FuelOnDemand', kind: Tx.label, color: FC.gold),
           SizedBox(height: 9),
-          FcText('Let’s get you moving.', kind: Tx.title),
+          FcText('Letâ€™s get you moving.', kind: Tx.title),
           SizedBox(height: 9),
           FcText('Create an account for safe, trackable fuel delivery.', color: FC.muted),
         ]),
@@ -499,7 +499,7 @@ class _ForgotScreenState extends State<ForgotScreen> {
       body: Narrow(gap: 20, padTop: vh(context) * .10, children: [
         const RoundFeature(IconName.shield),
         const FcText('Recover your account', kind: Tx.title, align: TextAlign.center),
-        FcText('Enter your registered phone number. We’ll send you a secure reset code.', color: FC.muted, align: TextAlign.center),
+        FcText('Enter your registered phone number. Weâ€™ll send you a secure reset code.', color: FC.muted, align: TextAlign.center),
         FcField(
           label: 'Phone number',
           hint: '+256 700 123 456',
@@ -637,7 +637,7 @@ class _OtpScreenState extends State<OtpScreen> {
 
   void _announce() {
     if (kDemoMode && auth.code != null && mounted) {
-      toast(context, 'Demo mode · your code is ${auth.code}', gold: true, seconds: 25);
+      toast(context, 'Demo mode Â· your code is ${auth.code}', gold: true, seconds: 25);
     }
   }
 
@@ -740,7 +740,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   Future<void> _submit() async {
     setState(() {
       _err1 = Validators.password(_p1.text);
-      _err2 = _p2.text.isEmpty ? 'Confirm your new password' : (_p2.text != _p1.text ? 'Passwords don’t match' : null);
+      _err2 = _p2.text.isEmpty ? 'Confirm your new password' : (_p2.text != _p1.text ? 'Passwords donâ€™t match' : null);
       _form = null;
     });
     if (_err1 != null || _err2 != null) return;
@@ -799,7 +799,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
       body: Narrow(gap: 20, children: [
         const RoundFeature(IconName.shield),
         const FcText('Create a new password', kind: Tx.title, align: TextAlign.center),
-        FcText('Choose a strong password you haven’t used before. You’ll use it to sign in to FuelConnect.', color: FC.muted, align: TextAlign.center),
+        FcText('Choose a strong password you havenâ€™t used before. Youâ€™ll use it to sign in to FuelOnDemand.', color: FC.muted, align: TextAlign.center),
         FcField(label: 'New password', hint: 'At least 8 characters', icon: IconName.shield, password: true, showToggle: true, controller: _p1, error: _err1, action: TextInputAction.next, onChanged: (_) => setState(() {})),
         if (p.isNotEmpty)
           Row(children: [
@@ -811,7 +811,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
             Text(strengthLabel, style: fs(10.88, color: strengthColor, w: FontWeight.w700)),
           ]),
         FcField(label: 'Confirm new password', hint: 'Re-enter your password', icon: IconName.shield, password: true, showToggle: true, controller: _p2, error: _err2, action: TextInputAction.done, onChanged: (_) => setState(() {}), onSubmitted: (_) => _submit()),
-        if (match && _err2 == null) FcText(matches ? 'Passwords match' : 'Passwords don’t match yet', kind: Tx.caption, color: matches ? FC.green : FC.danger),
+        if (match && _err2 == null) FcText(matches ? 'Passwords match' : 'Passwords donâ€™t match yet', kind: Tx.caption, color: matches ? FC.green : FC.danger),
         Panel(
           radius: 12,
           padding: const EdgeInsets.all(14),

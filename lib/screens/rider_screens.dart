@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -8,8 +8,8 @@ import '../services/auth_service.dart';
 
 // ===========================================================================
 // Rider / delivery-partner screens (from the Figma prototype)
-//   registration → login → dashboard → deliveries → request → accept/reject
-//   → navigate → confirm pickup → confirm delivery → earnings
+//   registration â†’ login â†’ dashboard â†’ deliveries â†’ request â†’ accept/reject
+//   â†’ navigate â†’ confirm pickup â†’ confirm delivery â†’ earnings
 // ===========================================================================
 
 // ---------------------------------------------------------------------------
@@ -32,7 +32,7 @@ class _OnlineChip extends StatelessWidget {
           return Tap(
             onTap: () {
               rider.toggleOnline();
-              toast(context, rider.online ? 'You’re online. New delivery requests will appear here.' : 'You’re offline. You won’t receive new requests.');
+              toast(context, rider.online ? 'Youâ€™re online. New delivery requests will appear here.' : 'Youâ€™re offline. You wonâ€™t receive new requests.');
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
@@ -85,9 +85,9 @@ class _JobCard extends StatelessWidget {
               Text('UGX ${fmt(job.pay)}', style: fs(14.4, color: FC.gold, w: FontWeight.w800, h: 1.2)),
             ]),
             const SizedBox(height: 14),
-            _RouteStop(IconName.fuel, job.station, 'Pickup · ${job.pickupKm.toStringAsFixed(1)} km away'),
+            _RouteStop(IconName.fuel, job.station, 'Pickup Â· ${job.pickupKm.toStringAsFixed(1)} km away'),
             Padding(padding: const EdgeInsets.only(left: 17.5), child: Container(width: 1, height: 14, color: FC.line)),
-            _RouteStop(IconName.location, job.dropArea, 'Drop-off · ${job.tripKm.toStringAsFixed(1)} km trip'),
+            _RouteStop(IconName.location, job.dropArea, 'Drop-off Â· ${job.tripKm.toStringAsFixed(1)} km trip'),
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.only(top: 12),
@@ -108,7 +108,7 @@ class _JobCard extends StatelessWidget {
 class _RouteMap extends StatelessWidget {
   final double height;
 
-  const _RouteMap({this.height = 250});
+  const _RouteMap({super.key, this.height = 220});
 
   Widget _pin(IconName icon, bool gold) => Container(
         width: 36,
@@ -283,7 +283,7 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
     if (!mounted) return;
     setState(() => _busy = false);
     rider.applicationPending = true;
-    toast(context, 'Application submitted. We’ll notify you once your documents are approved.', gold: true, seconds: 5);
+    toast(context, 'Application submitted. Weâ€™ll notify you once your documents are approved.', gold: true, seconds: 5);
     widget.go(Screen.riderLogin, replace: true);
   }
 
@@ -322,7 +322,7 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
                     ),
                     const SizedBox(height: 10),
                     FcText(e.key, kind: Tx.label, align: TextAlign.center),
-                    FcText(e.value ? 'Added · tap to remove' : 'Tap to upload', kind: Tx.caption, color: FC.muted, align: TextAlign.center),
+                    FcText(e.value ? 'Added Â· tap to remove' : 'Tap to upload', kind: Tx.caption, color: FC.muted, align: TextAlign.center),
                   ]),
                 ),
               ),
@@ -347,11 +347,11 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
       body: Narrow(gap: 20, children: [
         _progress(),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          FcText('RIDER REGISTRATION · STEP $_step OF 3', kind: Tx.label, color: FC.gold),
+          FcText('RIDER REGISTRATION Â· STEP $_step OF 3', kind: Tx.label, color: FC.gold),
           const SizedBox(height: 9),
           FcText(titles[_step - 1], kind: Tx.title),
           const SizedBox(height: 9),
-          FcText('Join FuelConnect’s certified delivery partner network.', color: FC.muted),
+          FcText('Join FuelOnDemandâ€™s certified delivery partner network.', color: FC.muted),
         ]),
         if (_step == 1) ...[
           FcField(label: 'Full legal name', hint: 'Your full name', icon: IconName.profile, controller: _name, error: _nameErr, action: TextInputAction.next),
@@ -410,7 +410,7 @@ class _RiderLoginScreenState extends State<RiderLoginScreen> {
       _busy = false;
       if (!ok) {
         _formErr = rider.applicationPending
-            ? 'Your application is still being reviewed. We’ll notify you as soon as it’s approved.'
+            ? 'Your application is still being reviewed. Weâ€™ll notify you as soon as itâ€™s approved.'
             : 'Incorrect phone number or password.';
       }
     });
@@ -436,12 +436,12 @@ class _RiderLoginScreenState extends State<RiderLoginScreen> {
       FcField(label: 'Password', hint: 'Enter your password', icon: IconName.shield, password: true, controller: _pass, error: _passErr, action: TextInputAction.done, onSubmitted: (_) => _submit()),
       Align(
         alignment: Alignment.centerRight,
-        child: TextAction('Forgot password?', onTap: () => toast(context, 'Rider password resets will work once the backend is connected. For now, contact FuelConnect support.')),
+        child: TextAction('Forgot password?', onTap: () => toast(context, 'Rider password resets will work once the backend is connected. For now, contact FuelOnDemand support.')),
       ),
       if (_formErr != null) FormError(_formErr!),
       FcButton('Sign in as rider', loading: _busy, onTap: _submit),
       FcButton('Register as a rider', variant: BV.outline, onTap: () => widget.go(Screen.riderRegistration)),
-      if (kDemoMode) FcText('Demo rider: +256 701 234 567 · Rider@2025', kind: Tx.caption, color: FC.dim, align: TextAlign.center),
+      if (kDemoMode) FcText('Demo rider: +256 701 234 567 Â· Rider@2025', kind: Tx.caption, color: FC.dim, align: TextAlign.center),
     ];
     final pad = cl(context, 22, 6, 70);
     if (wide) {
@@ -540,7 +540,7 @@ class RiderDashboardScreen extends StatelessWidget {
               ]),
               const SizedBox(height: 20),
               Row(children: [
-                _stat(IconName.wallet, 'Today’s earnings', 'UGX ${fmt(rider.todayEarnings)}'),
+                _stat(IconName.wallet, 'Todayâ€™s earnings', 'UGX ${fmt(rider.todayEarnings)}'),
                 const SizedBox(width: 10),
                 _stat(IconName.truck, 'Deliveries', '${rider.todayDeliveries} completed'),
                 const SizedBox(width: 10),
@@ -560,7 +560,7 @@ class RiderDashboardScreen extends StatelessWidget {
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           FcText('Trip in progress', kind: Tx.label, color: FC.gold),
-                          FcText('#${rider.activeTrip!.id} · ${rider.activeTrip!.dropArea}', kind: Tx.caption, color: FC.muted),
+                          FcText('#${rider.activeTrip!.id} Â· ${rider.activeTrip!.dropArea}', kind: Tx.caption, color: FC.muted),
                         ]),
                       ),
                       Ic(IconName.chevron, size: 18, color: FC.gold),
@@ -574,11 +574,11 @@ class RiderDashboardScreen extends StatelessWidget {
                 trailing: TextAction('View all', onTap: () => go(Screen.riderDeliveries)),
               ),
               if (!rider.online)
-                Panel(child: FcText('You’re offline. Tap the ONLINE chip at the top to start receiving delivery requests.', color: FC.muted))
+                Panel(child: FcText('Youâ€™re offline. Tap the ONLINE chip at the top to start receiving delivery requests.', color: FC.muted))
               else if (jobs.isEmpty)
                 Panel(
                   child: Column(children: [
-                    FcText('You’re all caught up. New requests will appear here.', color: FC.muted, align: TextAlign.center),
+                    FcText('Youâ€™re all caught up. New requests will appear here.', color: FC.muted, align: TextAlign.center),
                     TextAction('Refresh', onTap: rider.refreshJobs),
                   ]),
                 )
@@ -675,11 +675,11 @@ class _RiderDeliveriesScreenState extends State<RiderDeliveriesScreen> {
               ),
               const SizedBox(height: 18),
               if (!rider.online)
-                Panel(child: FcText('You’re offline. Go online to see delivery requests.', color: FC.muted))
+                Panel(child: FcText('Youâ€™re offline. Go online to see delivery requests.', color: FC.muted))
               else if (jobs.isEmpty)
                 Panel(
                   child: Column(children: [
-                    FcText('No requests right now. We’ll notify you when one comes in.', color: FC.muted, align: TextAlign.center),
+                    FcText('No requests right now. Weâ€™ll notify you when one comes in.', color: FC.muted, align: TextAlign.center),
                     TextAction('Refresh', onTap: rider.refreshJobs),
                   ]),
                 )
@@ -714,10 +714,10 @@ class RiderRequestScreen extends StatelessWidget {
       header: _riderHeader('Delivery request', go, back: Screen.riderDeliveries),
       body: Narrow(gap: 18, padTop: 22, children: [
         const _RouteMap(),
-        _EarnPanel('ESTIMATED EARNINGS', 'UGX ${fmt(j.pay)}', '${j.minutes} min · ${j.totalKmLabel}'),
+        _EarnPanel('ESTIMATED EARNINGS', 'UGX ${fmt(j.pay)}', '${j.minutes} min Â· ${j.totalKmLabel}'),
         _DetailBlock('ROUTE DETAILS', [
           ['Pickup', j.station],
-          ['Customer', '${j.customer} · ${j.customerRating}'],
+          ['Customer', '${j.customer} Â· ${j.customerRating}'],
           ['Drop-off', j.dropAddress],
           ['Order', j.productLine],
           ['Vehicle', j.vehicle],
@@ -795,14 +795,14 @@ class _RiderDecisionScreenState extends State<RiderDecisionScreen> {
           FcText(
             _rejecting
                 ? 'Select a reason so we can improve future delivery matches.'
-                : 'You’ll collect ${j.litres}L of ${j.product.toLowerCase()} from ${j.station} and deliver it to ${j.dropArea}.',
+                : 'Youâ€™ll collect ${j.litres}L of ${j.product.toLowerCase()} from ${j.station} and deliver it to ${j.dropArea}.',
             color: FC.muted,
           ),
         ]),
         if (_rejecting)
           _ReasonList(reasons: _reasons, selected: _reason, onPick: (r) => setState(() => _reason = r))
         else
-          _EarnPanel('YOU’LL EARN', 'UGX ${fmt(j.pay)}', '${j.totalKmLabel} total'),
+          _EarnPanel('YOUâ€™LL EARN', 'UGX ${fmt(j.pay)}', '${j.totalKmLabel} total'),
         FcButton(
           _rejecting ? 'Confirm rejection' : 'Accept delivery',
           onTap: _rejecting && _reason.isEmpty
@@ -932,7 +932,7 @@ class _RiderNavigationScreenState extends State<RiderNavigationScreen> {
         const SizedBox(width: 14),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            FcText('NEXT TURN · ${_turns[_i][0]}', kind: Tx.caption, color: FC.muted),
+            FcText('NEXT TURN Â· ${_turns[_i][0]}', kind: Tx.caption, color: FC.muted),
             FcText(_turns[_i][1], kind: Tx.title),
           ]),
         ),
@@ -946,14 +946,14 @@ class _RiderNavigationScreenState extends State<RiderNavigationScreen> {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               FcText(j.customer, kind: Tx.label),
-              FcText('${j.vehicle} · ${j.plate}', kind: Tx.caption, color: FC.muted, maxLines: 1),
+              FcText('${j.vehicle} Â· ${j.plate}', kind: Tx.caption, color: FC.muted, maxLines: 1),
             ]),
           ),
           FcButton.icon(IconName.phone, onTap: () => toast(context, 'Calling the customer will work once the backend shares contact details.')),
         ]),
       ),
       _EarnPanel('ESTIMATED ARRIVAL', '${_eta[_i]} minutes', _km[_i]),
-      FcButton('I’ve arrived', onTap: () => widget.go(Screen.riderDelivery)),
+      FcButton('Iâ€™ve arrived', onTap: () => widget.go(Screen.riderDelivery)),
     ], 16));
   }
 
@@ -1052,7 +1052,7 @@ class _RiderPickupScreenState extends State<RiderPickupScreen> {
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               FcText(j.station, kind: Tx.title),
-              FcText('Order #${j.id} · ${j.product}', kind: Tx.caption, color: FC.muted),
+              FcText('Order #${j.id} Â· ${j.product}', kind: Tx.caption, color: FC.muted),
             ]),
           ),
         ]),
@@ -1133,7 +1133,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> {
 
   Future<void> _confirm() async {
     setState(() {
-      _codeErr = _code.text.trim().length == 4 ? null : 'Enter the customer’s 4-digit delivery code';
+      _codeErr = _code.text.trim().length == 4 ? null : 'Enter the customerâ€™s 4-digit delivery code';
       _formErr = _photo ? null : 'Add a delivery photo to verify the drop-off.';
     });
     if (_codeErr != null || _formErr != null) return;
@@ -1188,7 +1188,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> {
                     child: Column(children: gapped([
                       KvRow('Order', '#${j.id}', size: 10.88),
                       KvRow('Delivered', '${j.litres}L ${j.product}', size: 10.88),
-                      KvRow('Today’s total', 'UGX ${fmt(rider.todayEarnings)}', size: 10.88),
+                      KvRow('Todayâ€™s total', 'UGX ${fmt(rider.todayEarnings)}', size: 10.88),
                     ], 11)),
                   ),
                   FcButton('Back to dashboard', onTap: () => widget.go(Screen.riderDashboard, root: true)),
@@ -1222,11 +1222,11 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> {
         _DetailBlock('DELIVERY CHECK', [
           ['Product', j.product],
           ['Quantity', '${j.litres} litres'],
-          ['Vehicle', '${j.vehicle.split(' ').skip(1).join(' ')} · ${j.plate}'],
+          ['Vehicle', '${j.vehicle.split(' ').skip(1).join(' ')} Â· ${j.plate}'],
         ]),
         FcField(
           label: 'Customer delivery code',
-          hint: 'Enter customer’s 4-digit code',
+          hint: 'Enter customerâ€™s 4-digit code',
           icon: IconName.shield,
           controller: _code,
           keyboard: TextInputType.number,

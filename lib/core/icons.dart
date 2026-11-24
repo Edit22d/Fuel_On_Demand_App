@@ -1,4 +1,4 @@
-// GENERATED from the original App.tsx icon set (same path data, same 24x24 grid).
+﻿// GENERATED from the original App.tsx icon set (same path data, same 24x24 grid).
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'theme.dart';

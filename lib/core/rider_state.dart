@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 
 /// One delivery request offered to a rider.
 class RiderJob {
@@ -26,7 +26,7 @@ class RiderJob {
 
   double get totalKm => pickupKm + tripKm;
   String get totalKmLabel => '${totalKm.toStringAsFixed(1)} km';
-  String get productLine => '$product · ${litres}L';
+  String get productLine => '$product Â· ${litres}L';
   String get customerInitials {
     final p = customer.trim().split(RegExp(r'\s+')).where((s) => s.isNotEmpty).toList();
     if (p.isEmpty) return '?';
@@ -101,9 +101,9 @@ class RiderState extends ChangeNotifier {
   int weekTrips = 18;
   final List<int> weekBars = [45, 70, 52, 85, 62, 95, 74];
   final List<RiderEarning> recent = [
-    const RiderEarning('Stabex Kira Road', 'Today · #FC-29841', 18500),
-    const RiderEarning('Shell Lugogo', 'Today · #FC-29795', 16000),
-    const RiderEarning('Rubis Bukoto', 'Yesterday · #FC-29682', 21500),
+    const RiderEarning('Stabex Kira Road', 'Today Â· #FC-29841', 18500),
+    const RiderEarning('Shell Lugogo', 'Today Â· #FC-29795', 16000),
+    const RiderEarning('Rubis Bukoto', 'Yesterday Â· #FC-29682', 21500),
   ];
 
   int get avgPerTrip => weekTrips == 0 ? 0 : (weekTotal / weekTrips).round();
@@ -161,7 +161,7 @@ class RiderState extends ChangeNotifier {
     available += j.pay;
     weekTotal += j.pay;
     weekTrips += 1;
-    recent.insert(0, RiderEarning(j.station, 'Today · #${j.id}', j.pay));
+    recent.insert(0, RiderEarning(j.station, 'Today Â· #${j.id}', j.pay));
     activeTrip = null;
     selected = null;
     notifyListeners();

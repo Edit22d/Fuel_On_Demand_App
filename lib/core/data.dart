@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'icons.dart';
 
 class Station {
@@ -16,9 +16,9 @@ class Station {
 }
 
 const kStations = [
-  Station(name: 'Stabex Kira Road', brand: 'STABEX', distance: '1.8 km', eta: '15–20 min', rating: '4.9', image: 'assets/images/station-hero.jpg', km: 1.8),
-  Station(name: 'Shell Lugogo', brand: 'SHELL', distance: '3.2 km', eta: '20–28 min', rating: '4.8', image: 'assets/images/station-card.jpg', km: 3.2),
-  Station(name: 'Rubis Bukoto', brand: 'RUBIS', distance: '4.1 km', eta: '22–30 min', rating: '4.8', image: 'assets/images/pump.jpg', km: 4.1),
+  Station(name: 'Stabex Kira Road', brand: 'STABEX', distance: '1.8 km', eta: '15â€“20 min', rating: '4.9', image: 'assets/images/station-hero.png', km: 1.8),
+  Station(name: 'Shell Lugogo', brand: 'SHELL', distance: '3.2 km', eta: '20â€“28 min', rating: '4.8', image: 'assets/images/station-card.jpg', km: 3.2),
+  Station(name: 'Rubis Bukoto', brand: 'RUBIS', distance: '4.1 km', eta: '22â€“30 min', rating: '4.8', image: 'assets/images/pump.jpg', km: 4.1),
 ];
 
 class Partner {
@@ -60,8 +60,8 @@ class Slide {
 }
 
 const kSlides = [
-  Slide('ON-DEMAND DELIVERY', 'Fuel that meets you where you are.', 'Skip the station. Choose your fuel, pin your location, and we’ll handle the rest.', 'assets/images/station-hero.jpg'),
-  Slide('LIVE PRICE COMPARISON', 'Better prices. Smarter refuels.', 'Compare verified stations nearby and always know exactly what you’ll pay.', 'assets/images/station-card.jpg'),
+  Slide('ON-DEMAND DELIVERY', 'Fuel that meets you where you are.', 'Skip the station. Choose your fuel, pin your location, and weâ€™ll handle the rest.', 'assets/images/station-hero.png'),
+  Slide('LIVE PRICE COMPARISON', 'Better prices. Smarter refuels.', 'Compare verified stations nearby and always know exactly what youâ€™ll pay.', 'assets/images/station-card.jpg'),
   Slide('SAFE & TRACKED', 'Every delivery, visible in real time.', 'From secure payment to arrival, follow your certified delivery partner every step.', 'assets/images/pump.jpg'),
 ];
 
@@ -76,8 +76,8 @@ class Vehicle {
     this.tank = '',
     required this.visual,
   });
-  String get selectCaption => [plate, fuel, if (color.isNotEmpty) color].join(' · ');
-  String get listCaption => [plate, fuel, if (tank.isNotEmpty) '$tank tank'].join(' · ');
+  String get selectCaption => [plate, fuel, if (color.isNotEmpty) color].join(' Â· ');
+  String get listCaption => [plate, fuel, if (tank.isNotEmpty) '$tank tank'].join(' Â· ');
 }
 
 class Place {
@@ -119,7 +119,7 @@ class HistoryOrder {
 }
 
 const kHistory = [
-  HistoryOrder('18 Jun 2025', 'Shell Lugogo', 'Diesel · 28L', 'UGX 153,500'),
-  HistoryOrder('29 May 2025', 'Stabex Kira Road', 'Premium · 35L', 'UGX 191,800'),
-  HistoryOrder('04 May 2025', 'TotalEnergies Ntinda', 'Petrol · 22L', 'UGX 124,400'),
+  HistoryOrder('18 Jun 2025', 'Shell Lugogo', 'Diesel Â· 28L', 'UGX 153,500'),
+  HistoryOrder('29 May 2025', 'Stabex Kira Road', 'Premium Â· 35L', 'UGX 191,800'),
+  HistoryOrder('04 May 2025', 'TotalEnergies Ntinda', 'Petrol Â· 22L', 'UGX 124,400'),
 ];

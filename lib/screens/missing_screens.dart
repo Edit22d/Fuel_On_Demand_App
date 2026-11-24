@@ -1,5 +1,4 @@
-// Temporary stand-ins for the 4 screens that shell.dart expects but that are
-// missing from the project. Replace them if you recover the originals.
+﻿
 import 'package:flutter/material.dart';
 import '../core/core.dart';
 
@@ -71,7 +70,7 @@ class _VehiclesScreenState extends State<VehiclesScreen> {
                 Expanded(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     FcText(v.name, kind: Tx.subtitle),
-                    FcText('${v.plate} · ${v.fuel} · ${v.color} · ${v.tank}', kind: Tx.caption, color: FC.muted),
+                    FcText('${v.plate} Â· ${v.fuel} Â· ${v.color} Â· ${v.tank}', kind: Tx.caption, color: FC.muted),
                   ]),
                 ),
                 RadioDot(selected: app.vehicleId == v.id),

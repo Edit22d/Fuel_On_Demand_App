@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'data.dart';
 import 'icons.dart';
 import 'theme.dart';
@@ -130,7 +130,7 @@ class AppState extends ChangeNotifier {
   TimeOfDay? scheduledAt;
   String deliveryAddress = 'Acacia Mall, Kisementi';
   String deliveryNote = '';
-  String payId = 'visa';
+  String payId = 'airtel';
   bool stationSaved = false;
 
   int get fuelTotal => litres * prices[fuelType]!;
@@ -152,11 +152,10 @@ class AppState extends ChangeNotifier {
     const Place('Gym', 'Acacia Mall, Kisementi'),
   ];
 
+  // Demo merchant codes: replace with your real ones when you have them.
   final List<PayMethod> payMethods = [
-    const PayMethod(id: 'momo', title: 'MTN Mobile Money', caption: '+256 700 ••• 456', badge: 'MTN', badgeBg: Color(0xFFFFCB05), badgeFg: Color(0xFF171717)),
-    const PayMethod(id: 'airtel', title: 'Airtel Money', caption: 'Add an Airtel number', badge: 'A', badgeBg: Color(0xFFE9222B), badgeFg: Colors.white),
-    const PayMethod(id: 'visa', title: 'Visa ending 4242', caption: 'Expires 08/28', badge: 'VISA'),
-    const PayMethod(id: 'wallet', title: 'FuelConnect Wallet', caption: '', icon: IconName.wallet),
+    const PayMethod(id: 'airtel', title: 'Airtel Merchant Code', caption: 'Merchant code 123456', badge: 'A', badgeBg: Color(0xFFE9222B), badgeFg: Colors.white),
+    const PayMethod(id: 'mtn', title: 'MTN Merchant Code', caption: 'Merchant code 654321', badge: 'MTN', badgeBg: Color(0xFFFFCB05), badgeFg: Color(0xFF171717)),
     const PayMethod(id: 'cash', title: 'Cash on delivery', caption: 'Pay your delivery partner', icon: IconName.card),
   ];
   PayMethod get selectedPay => payMethods.firstWhere((m) => m.id == payId, orElse: () => payMethods.first);
@@ -191,7 +190,7 @@ class AppState extends ChangeNotifier {
 
   // ----- notifications -----------------------------------------------------
   final List<Notice> notices = [
-    Notice(IconName.truck, 'Your fuel is on the way', 'Marcus has collected your order and will arrive in 12–16 minutes.', 'Now', true),
+    Notice(IconName.truck, 'Your fuel is on the way', 'Marcus has collected your order and will arrive in 12â€“16 minutes.', 'Now', true),
     Notice(IconName.check, 'Payment confirmed', 'Your payment of UGX 191,800 was successful.', '4 min', true),
     Notice(IconName.fuel, 'Prices dropped near you', 'Petrol is now UGX 5,180/L at Stabex Kira Road.', '2 hr', false),
     Notice(IconName.shield, 'Safety check complete', 'Your delivery partner has passed the pre-trip safety check.', 'Yesterday', false),

@@ -1,9 +1,7 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../core/core.dart';
 import '../services/auth_service.dart';
-import 'order_screens.dart' show VehicleTile;
 import 'sheets.dart';
 
 Widget _chevron() => Ic(IconName.chevron, size: 18, color: FC.dim);
@@ -40,7 +38,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           child: Row(children: [
             const IconBox(IconName.fuel),
             const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText(o.station, kind: Tx.label), FcText('${o.date} · ${o.product}', kind: Tx.caption, color: FC.muted)])),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText(o.station, kind: Tx.label), FcText('${o.date} Â· ${o.product}', kind: Tx.caption, color: FC.muted)])),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [FcText(o.price, kind: Tx.label), Text('Completed', style: fs(8, color: FC.green, h: 1.5))]),
           ]),
         ),
@@ -89,12 +87,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 border: Border.all(color: const Color(0xFF4C4322)),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const LivePill('ON THE WAY'), Text('12–16 min', style: fs(9.6, color: FC.muted))]),
+                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const LivePill('ON THE WAY'), Text('12â€“16 min', style: fs(9.6, color: FC.muted))]),
                 const SizedBox(height: 18),
                 Row(children: [
                   Container(width: 44, height: 44, decoration: BoxDecoration(color: FC.gold, borderRadius: BorderRadius.circular(12)), child: const Center(child: Ic(IconName.truck, color: Color(0xFF111111)))),
                   const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText('${app.productName} · ${app.litres}L', kind: Tx.subtitle), FcText('Stabex Kira Road', kind: Tx.caption, color: FC.muted)])),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText('${app.productName} Â· ${app.litres}L', kind: Tx.subtitle), FcText('Stabex Kira Road', kind: Tx.caption, color: FC.muted)])),
                   Ic(IconName.chevron, color: FC.muted),
                 ]),
                 const SizedBox(height: 14),
@@ -136,14 +134,14 @@ class OrderDetailScreen extends StatelessWidget {
           child: Row(children: [
             Container(width: 48, height: 48, decoration: BoxDecoration(shape: BoxShape.circle, color: FC.gold), child: const Center(child: Ic(IconName.check, size: 24, color: Color(0xFF111111)))),
             const SizedBox(width: 13),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText('Delivered successfully', kind: Tx.subtitle), FcText('29 May 2025 · 7:42 PM', kind: Tx.caption, color: FC.muted)]),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText('Delivered successfully', kind: Tx.subtitle), FcText('29 May 2025 Â· 7:42 PM', kind: Tx.caption, color: FC.muted)]),
           ]),
         ),
         Container(
           padding: const EdgeInsets.only(top: 18),
           decoration: BoxDecoration(border: Border(top: BorderSide(color: FC.line))),
           child: Row(children: [
-            ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/images/station-hero.jpg', width: 48, height: 48, fit: BoxFit.cover)),
+            ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/images/station-hero.png', width: 48, height: 48, fit: BoxFit.cover)),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText('Stabex Kira Road', kind: Tx.label), FcText('Verified FuelConnect partner', kind: Tx.caption, color: FC.muted)])),
             Text('STABEX', style: fs(8, color: FC.gold, w: FontWeight.w900, ls: .96)),
@@ -155,7 +153,7 @@ class OrderDetailScreen extends StatelessWidget {
             FcText('DELIVERY SUMMARY', kind: Tx.label, color: FC.gold),
             const KvRow('Product', 'Premium petrol', size: 10.88),
             const KvRow('Quantity', '35 litres', size: 10.88),
-            const KvRow('Vehicle', 'Toyota RAV4 · UBP 482M', size: 10.88),
+            const KvRow('Vehicle', 'Toyota RAV4 Â· UBP 482M', size: 10.88),
             const KvRow('Delivered to', 'Acacia Mall, Kisementi', size: 10.88),
           ], 14)),
         ),
@@ -250,7 +248,7 @@ class _WalletScreenState extends State<WalletScreen> {
               Container(width: 44, height: 44, decoration: BoxDecoration(shape: BoxShape.circle, color: FC.gold), child: const Center(child: Ic(IconName.star, color: Color(0xFF111111)))),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                FcText('GOLD MEMBER · ${fmt(app.points)} POINTS', kind: Tx.label),
+                FcText('GOLD MEMBER Â· ${fmt(app.points)} POINTS', kind: Tx.label),
                 FcText('${fmt(math.max(0, AppState.nextTierPoints - app.points))} points to your next fuel reward', kind: Tx.caption, color: FC.muted),
               ])),
               Ic(IconName.chevron, color: FC.muted),
@@ -266,7 +264,7 @@ class _WalletScreenState extends State<WalletScreen> {
               IconBox(t.amount < 0 ? IconName.fuel : IconName.wallet, color: t.amount < 0 ? FC.gold : FC.green),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText(t.title, kind: Tx.label), FcText(t.subtitle, kind: Tx.caption, color: FC.muted)])),
-              Text('UGX ${t.amount < 0 ? '−' : '+'}${fmt(t.amount.abs())}', style: fs(10.88, w: FontWeight.w700)),
+              Text('UGX ${t.amount < 0 ? 'âˆ’' : '+'}${fmt(t.amount.abs())}', style: fs(10.88, w: FontWeight.w700)),
             ]),
           ),
       ]),
@@ -325,7 +323,7 @@ class _RewardsScreenState extends State<RewardsScreen> {
                 FcText(fmt(p), kind: Tx.display, color: FC.gold),
                 FcText('AVAILABLE POINTS', kind: Tx.caption, color: FC.gold),
                 ClipRRect(borderRadius: BorderRadius.circular(5), child: LinearProgressIndicator(value: (p / AppState.nextTierPoints).clamp(0, 1).toDouble(), minHeight: 5, backgroundColor: FC.line, valueColor: AlwaysStoppedAnimation(FC.gold))),
-                FcText(left == 0 ? 'You have reached Platinum · Earn 1 point per UGX 1,000' : '${fmt(left)} points until Platinum · Earn 1 point per UGX 1,000', kind: Tx.caption, color: FC.gold, align: TextAlign.center),
+                FcText(left == 0 ? 'You have reached Platinum Â· Earn 1 point per UGX 1,000' : '${fmt(left)} points until Platinum Â· Earn 1 point per UGX 1,000', kind: Tx.caption, color: FC.gold, align: TextAlign.center),
               ], 12)),
             ),
           ]),
@@ -468,7 +466,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Row(children: [
             Container(width: 58, height: 58, alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: FC.surface2, border: Border.all(color: const Color(0xFF6B5A1E))), child: Text(pr.initials, style: fs(14, color: FC.gold, w: FontWeight.w800, h: 1))),
             const SizedBox(width: 13),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText(pr.name, kind: Tx.title), FcText('${pr.email} · ${maskPhone(pr.phone)}', kind: Tx.caption, color: FC.muted)])),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText(pr.name, kind: Tx.title), FcText('${pr.email} Â· ${maskPhone(pr.phone)}', kind: Tx.caption, color: FC.muted)])),
             Tap(
               onTap: () async {
                 await showEditProfileSheet(context);
@@ -507,7 +505,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           widget.go(Screen.login, root: true);
         }),
         const SizedBox(height: 18),
-        FcText('FuelConnect version 1.0.0', kind: Tx.caption, color: FC.muted, align: TextAlign.center),
+        FcText('FuelOnDemand version 1.0.0', kind: Tx.caption, color: FC.muted, align: TextAlign.center),
       ]),
     );
   }

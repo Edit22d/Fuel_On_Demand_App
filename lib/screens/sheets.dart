@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../core/core.dart';
 import '../services/auth_service.dart';
@@ -156,7 +156,7 @@ class _PlaceFormState extends State<_PlaceForm> {
 
   @override
   Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        FcField(label: 'Name', hint: 'Home, Office, Gym…', icon: IconName.star, controller: _l, error: _le, action: TextInputAction.next),
+        FcField(label: 'Name', hint: 'Home, Office, Gymâ€¦', icon: IconName.star, controller: _l, error: _le, action: TextInputAction.next),
         const SizedBox(height: 16),
         FcField(label: 'Address', hint: 'Street, building, landmark', icon: IconName.location, controller: _a, error: _ae, action: TextInputAction.done, onSubmitted: (_) => _save()),
         const SizedBox(height: 18),
@@ -302,7 +302,7 @@ class _TopUpFormState extends State<_TopUpForm> {
         const SizedBox(height: 16),
         FcField(label: 'Amount (UGX)', hint: 'Enter amount', icon: IconName.wallet, controller: _c, keyboard: TextInputType.number, error: _err, formatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(7)], onChanged: (_) => setState(() => _err = null), action: TextInputAction.done, onSubmitted: (_) => _go()),
         const SizedBox(height: 8),
-        FcText('Charged to MTN Mobile Money +256 700 ••• 456', kind: Tx.caption, color: FC.muted),
+        FcText('Charged to MTN Mobile Money +256 700 â€¢â€¢â€¢ 456', kind: Tx.caption, color: FC.muted),
         const SizedBox(height: 18),
         FcButton('Top up', onTap: _go),
       ]);
@@ -432,14 +432,14 @@ class _Chat extends StatefulWidget {
 
 class _ChatState extends State<_Chat> {
   final _c = TextEditingController();
-  final List<(bool, String)> _msgs = [(false, 'Hi! I’m the FuelConnect support assistant. How can I help?')];
+  final List<(bool, String)> _msgs = [(false, 'Hi! Iâ€™m the FuelOnDemand support assistant. How can I help?')];
 
   @override
   void initState() {
     super.initState();
     if (widget.topic != null) {
       _msgs.add((true, widget.topic!));
-      _msgs.add((false, 'Thanks — an agent will join this chat shortly. Meanwhile, tell us your order number if you have one.'));
+      _msgs.add((false, 'Thanks â€” an agent will join this chat shortly. Meanwhile, tell us your order number if you have one.'));
     }
   }
 

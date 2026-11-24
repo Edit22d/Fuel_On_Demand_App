@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/core.dart';
@@ -38,7 +38,7 @@ class _FuelScreenState extends State<FuelScreen> {
     return AppPage(
       header: PageHeader(title: 'Build your order', goBack: () => app.backOr(Screen.station)),
       body: Narrow(gap: 22, children: [
-        _stepIntro('STEP 1 OF 4 · FUEL', 'Select fuel type'),
+        _stepIntro('STEP 1 OF 4 Â· FUEL', 'Select fuel type'),
         Row(children: [
           for (final f in ['Petrol', 'Diesel', 'Power'])
             Expanded(
@@ -173,7 +173,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
     return AppPage(
       header: PageHeader(title: 'Select vehicle', goBack: () => app.backOr(Screen.fuel)),
       body: Narrow(gap: 20, children: [
-        _stepIntro('STEP 2 OF 4 · VEHICLE', 'Which vehicle are we fueling?', body: 'This helps your delivery partner identify you and confirm the correct fuel type.'),
+        _stepIntro('STEP 2 OF 4 Â· VEHICLE', 'Which vehicle are we fueling?', body: 'This helps your delivery partner identify you and confirm the correct fuel type.'),
         Column(children: gapped([
           for (final x in app.vehicles)
             VehicleTile(v: x, selected: x.id == v.id, caption: x.selectCaption, trailing: RadioDot(selected: x.id == v.id), onTap: () => setState(() => app.vehicleId = x.id)),
@@ -332,11 +332,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     return AppPage(
       header: PageHeader(title: 'Delivery details', goBack: () => app.backOr(Screen.vehicle)),
       body: Narrow(gap: 22, children: [
-        _stepIntro('STEP 3 OF 4 · DELIVERY', 'Where should we meet you?'),
+        _stepIntro('STEP 3 OF 4 Â· DELIVERY', 'Where should we meet you?'),
         _map(context),
         const FcText('Delivery time', kind: Tx.subtitle),
         Row(children: [
-          _choice(IconName.clock, 'Deliver now', '18–24 min', nowSel, () => setState(() => app.scheduled = false)),
+          _choice(IconName.clock, 'Deliver now', '18â€“24 min', nowSel, () => setState(() => app.scheduled = false)),
           const SizedBox(width: 10),
           _choice(IconName.calendar, 'Schedule', sched, !nowSel, _pickTime),
         ]),
@@ -345,11 +345,11 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           padding: const EdgeInsets.only(top: 18),
           decoration: BoxDecoration(border: Border(top: BorderSide(color: FC.line))),
           child: Row(children: [
-            ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/images/station-hero.jpg', width: 48, height: 48, fit: BoxFit.cover)),
+            ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/images/station-hero.png', width: 48, height: 48, fit: BoxFit.cover)),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               const FcText('Stabex Kira Road', kind: Tx.label),
-              FcText('${app.productName} · ${app.litres} litres', kind: Tx.caption, color: FC.muted),
+              FcText('${app.productName} Â· ${app.litres} litres', kind: Tx.caption, color: FC.muted),
             ])),
             FcText('UGX ${fmt(app.fuelTotal)}', kind: Tx.subtitle),
           ]),
@@ -400,7 +400,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
     return AppPage(
       header: PageHeader(title: 'Payment', goBack: () => app.backOr(Screen.checkout)),
       body: Narrow(gap: 22, children: [
-        _stepIntro('STEP 4 OF 4 · PAYMENT', 'Choose payment method'),
+        _stepIntro('STEP 4 OF 4 Â· PAYMENT', 'Choose payment method'),
         Column(children: gapped([
           for (final m in app.payMethods)
             Tap(
@@ -438,7 +438,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
         Panel(
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: gapped([
             const FcText('Order summary', kind: Tx.subtitle),
-            KvRow('${app.productName} · ${app.litres}L', 'UGX ${fmt(app.fuelTotal)}'),
+            KvRow('${app.productName} Â· ${app.litres}L', 'UGX ${fmt(app.fuelTotal)}'),
             KvRow('Delivery fee', 'UGX ${fmt(AppState.deliveryFee)}'),
             KvRow('Service fee', 'UGX ${fmt(AppState.serviceFee)}'),
             TotalRow('Total', 'UGX ${fmt(total)}'),
@@ -579,7 +579,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
             const LivePill('LIVE'),
             const SizedBox(height: 8),
             FcText(title, kind: Tx.title),
-            FcText(_p == 3 ? 'Meet your driver at the delivery point.' : 'Estimated arrival in 12–16 minutes', kind: Tx.caption, color: FC.muted),
+            FcText(_p == 3 ? 'Meet your driver at the delivery point.' : 'Estimated arrival in 12â€“16 minutes', kind: Tx.caption, color: FC.muted),
           ]),
         ),
         const SizedBox(width: 12),
@@ -599,7 +599,7 @@ class _TrackingScreenState extends State<TrackingScreen> {
         child: Row(children: [
           Container(width: 44, height: 44, alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: FC.gold), child: Text('MK', style: fs(12, color: const Color(0xFF111111), w: FontWeight.w800, h: 1))),
           const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText('Marcus K.', kind: Tx.label), FcText('Certified delivery partner · 4.9', kind: Tx.caption, color: FC.muted)])),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText('Marcus K.', kind: Tx.label), FcText('Certified delivery partner Â· 4.9', kind: Tx.caption, color: FC.muted)])),
           FcButton.icon(IconName.phone, onTap: () => toast(context, 'Calling Marcus K. will work once the backend shares driver contact details.')),
         ]),
       ),
@@ -781,11 +781,11 @@ class _CancelOrderScreenState extends State<CancelOrderScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 const LivePill('ON THE WAY'),
                 const SizedBox(height: 6),
-                FcText('${app.productName} · ${app.litres}L', kind: Tx.subtitle),
-                FcText('Stabex Kira Road · Order #FC-29841', kind: Tx.caption, color: FC.muted),
+                FcText('${app.productName} Â· ${app.litres}L', kind: Tx.subtitle),
+                FcText('Stabex Kira Road Â· Order #FC-29841', kind: Tx.caption, color: FC.muted),
               ]),
             ),
-            FcText('12–16 min', kind: Tx.label, color: FC.gold),
+            FcText('12â€“16 min', kind: Tx.label, color: FC.gold),
           ]),
         ),
 
@@ -795,7 +795,7 @@ class _CancelOrderScreenState extends State<CancelOrderScreen> {
           SizedBox(height: 9),
           FcText('Why are you cancelling?', kind: Tx.title),
           SizedBox(height: 9),
-          FcText('Your feedback helps us improve the FuelConnect experience.', color: FC.muted),
+          FcText('Your feedback helps us improve the FuelOnDemand experience.', color: FC.muted),
         ]),
 
         // reasons
@@ -848,15 +848,15 @@ class _CancelOrderScreenState extends State<CancelOrderScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: gapped([
             const FcText('Refund summary', kind: Tx.subtitle),
             KvRow('Amount paid', 'UGX ${fmt(paid)}'),
-            KvRow('Cancellation fee', '− UGX ${fmt(_cancelFee)}'),
-            TotalRow('You’ll receive', 'UGX ${fmt(refund)}'),
+            KvRow('Cancellation fee', 'âˆ’ UGX ${fmt(_cancelFee)}'),
+            TotalRow('Youâ€™ll receive', 'UGX ${fmt(refund)}'),
             FcText('Refunded to ${app.selectedPay.title} within 24 hours.', kind: Tx.caption, color: FC.muted),
           ], 13)),
         ),
 
         FcButton('Confirm cancellation', onTap: _reason.isEmpty ? null : () => setState(() => _cancelled = true)),
         FcButton('Keep my order', variant: BV.outline, onTap: () => widget.go(Screen.tracking)),
-        FcText('Need help instead? Contact FuelConnect support.', kind: Tx.caption, color: FC.muted, align: TextAlign.center),
+        FcText('Need help instead? Contact FuelOnDemand support.', kind: Tx.caption, color: FC.muted, align: TextAlign.center),
       ]),
     );
   }
@@ -899,7 +899,7 @@ class _CancelOrderScreenState extends State<CancelOrderScreen> {
                   FcText('ORDER CANCELLED', kind: Tx.label, color: FC.gold, align: TextAlign.center),
                   const FcText('Your order has been cancelled.', kind: Tx.display, align: TextAlign.center),
                   FcText(
-                    'We’ve notified Stabex Kira Road and your delivery partner. Your refund is being processed.',
+                    'Weâ€™ve notified Stabex Kira Road and your delivery partner. Your refund is being processed.',
                     color: FC.muted,
                     align: TextAlign.center,
                   ),
@@ -920,7 +920,7 @@ class _CancelOrderScreenState extends State<CancelOrderScreen> {
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                           FcText('Refund in progress', kind: Tx.label),
-                          FcText('We’ll send a notification when the refund is complete.', kind: Tx.caption, color: FC.muted),
+                          FcText('Weâ€™ll send a notification when the refund is complete.', kind: Tx.caption, color: FC.muted),
                         ]),
                       ),
                     ]),

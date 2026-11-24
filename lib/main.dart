@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'core/core.dart';
 import 'services/auth_service.dart';
@@ -15,11 +15,11 @@ Future<void> main() async {
     systemNavigationBarIconBrightness: Brightness.light,
   ));
   await auth.init();
-  runApp(const FuelConnectApp());
+  runApp(const FuelOnDemandApp());
 }
 
-class FuelConnectApp extends StatelessWidget {
-  const FuelConnectApp({super.key});
+class FuelOnDemandApp extends StatelessWidget {
+  const FuelOnDemandApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +27,7 @@ class FuelConnectApp extends StatelessWidget {
     return ListenableBuilder(
       listenable: app,
       builder: (context, _) => MaterialApp(
-        title: 'FuelConnect',
+        title: 'FuelOnDemand',
         debugShowCheckedModeBanner: false,
         theme: buildTheme(),
         darkTheme: buildTheme(),

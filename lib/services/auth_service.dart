@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -104,7 +104,7 @@ String formatPhone(String e164) {
 
 String maskPhone(String e164) {
   if (e164.length != 13) return e164;
-  return '${e164.substring(0, 4)} ${e164.substring(4, 7)} ••• ${e164.substring(10)}';
+  return '${e164.substring(0, 4)} ${e164.substring(4, 7)} â€¢â€¢â€¢ ${e164.substring(10)}';
 }
 
 class AuthService {
@@ -203,7 +203,7 @@ class AuthService {
     await _latency();
     final n = Validators.normalizePhone(phone);
     if (n == null || _byPhone(n) == null) {
-      return const AuthResult.fail('We couldn’t find an account with that phone number.');
+      return const AuthResult.fail('We couldnâ€™t find an account with that phone number.');
     }
     return const AuthResult.ok();
   }
@@ -242,7 +242,7 @@ class AuthService {
       _attempts++;
       final left = maxAttempts - _attempts;
       return AuthResult.fail(left > 0
-          ? 'That code isn’t correct. $left ${left == 1 ? 'attempt' : 'attempts'} left.'
+          ? 'That code isnâ€™t correct. $left ${left == 1 ? 'attempt' : 'attempts'} left.'
           : 'Too many attempts. Send a new code.');
     }
     final p = purpose!;
@@ -270,7 +270,7 @@ class AuthService {
     final a = resetPhone == null ? null : _byPhone(resetPhone!);
     if (!resetVerified || a == null) return const AuthResult.fail('Please verify your phone number first.');
     if (a.hash == _hash(a.salt, newPassword)) {
-      return const AuthResult.fail('Choose a password you haven’t used before.');
+      return const AuthResult.fail('Choose a password you havenâ€™t used before.');
     }
     a.hash = _hash(a.salt, newPassword);
     await _save();

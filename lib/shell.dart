@@ -1,4 +1,4 @@
-import 'screens/missing_screens.dart';
+﻿import 'screens/missing_screens.dart';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -171,7 +171,7 @@ class _ScreenMenuState extends State<ScreenMenu> {
                     padding: const EdgeInsets.fromLTRB(3, 2, 3, 13),
                     decoration: BoxDecoration(border: Border(bottom: BorderSide(color: FC.line))),
                     child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText('PROTOTYPE', kind: Tx.label, color: FC.gold), FcText('FuelConnect screens', kind: Tx.subtitle)]),
+                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText('PROTOTYPE', kind: Tx.label, color: FC.gold), FcText('FuelOnDemand screens', kind: Tx.subtitle)]),
                       Container(
                         constraints: const BoxConstraints(minWidth: 28),
                         height: 28,

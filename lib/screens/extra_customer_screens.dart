@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../core/core.dart';
 import '../core/extras_state.dart';
 import '../services/auth_service.dart';
 
 // Screens that exist in the Figma prototype but were missing in Flutter:
-//   • Order confirmed   • Edit profile   • App settings
+//   â€¢ Order confirmed   â€¢ Edit profile   â€¢ App settings
 // (Cancel order already lives in order_screens.dart and is only wired in.)
 
 Widget _chevron() => Ic(IconName.chevron, size: 18, color: FC.dim);
@@ -65,7 +65,7 @@ class OrderConfirmationScreen extends StatelessWidget {
                   const _OrbitBadge(IconName.check),
                   FcText('PAYMENT CONFIRMED', kind: Tx.label, color: FC.gold, align: TextAlign.center),
                   const FcText('Your order is confirmed.', kind: Tx.display, align: TextAlign.center),
-                  FcText('Stabex Kira Road is preparing your fuel. We’ll assign a certified delivery partner shortly.', color: FC.muted, align: TextAlign.center),
+                  FcText('Stabex Kira Road is preparing your fuel. Weâ€™ll assign a certified delivery partner shortly.', color: FC.muted, align: TextAlign.center),
                   Panel(
                     padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                     child: Column(children: [
@@ -79,7 +79,7 @@ class OrderConfirmationScreen extends StatelessWidget {
                     child: Column(children: gapped([
                       KvRow(app.productName, '${app.litres} litres', size: 10.88),
                       KvRow('Deliver to', app.deliveryAddress, size: 10.88),
-                      const KvRow('Estimated arrival', '18–24 minutes', size: 10.88),
+                      const KvRow('Estimated arrival', '18â€“24 minutes', size: 10.88),
                       KvRow('Total paid', 'UGX ${fmt(app.orderTotal)}', size: 10.88),
                     ], 11)),
                   ),
@@ -90,8 +90,8 @@ class OrderConfirmationScreen extends StatelessWidget {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          FcText('We’ll keep you updated', kind: Tx.label),
-                          FcText('You’ll receive an alert when your rider collects the fuel.', kind: Tx.caption, color: FC.muted),
+                          FcText('Weâ€™ll keep you updated', kind: Tx.label),
+                          FcText('Youâ€™ll receive an alert when your rider collects the fuel.', kind: Tx.caption, color: FC.muted),
                         ]),
                       ),
                     ]),
@@ -184,7 +184,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ]),
           ),
           const SizedBox(height: 6),
-          FcText('To change your number, contact FuelConnect support.', kind: Tx.caption, color: FC.muted),
+          FcText('To change your number, contact FuelOnDemand support.', kind: Tx.caption, color: FC.muted),
         ]),
         FcField(label: 'Email address', hint: 'joel.kato@email.com', icon: IconName.card, controller: _email, keyboard: TextInputType.emailAddress, error: _emailErr, action: TextInputAction.next),
         FcField(label: 'Emergency contact', hint: '+256 772 000 000', icon: IconName.phone, controller: _emergency, keyboard: TextInputType.phone, error: _emergencyErr, action: TextInputAction.done, onSubmitted: (_) => _save()),
@@ -230,14 +230,14 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
     final ok = await confirmDialog(
       context,
       title: 'Change password',
-      body: 'We’ll send a verification code to ${maskPhone(auth.profile.phone)} so you can set a new password.',
+      body: 'Weâ€™ll send a verification code to ${maskPhone(auth.profile.phone)} so you can set a new password.',
       confirm: 'Send code',
     );
     if (!ok || !mounted) return;
     final r = await auth.requestPasswordReset(auth.profile.phone);
     if (!mounted) return;
     if (!r.ok) {
-      toast(context, r.error ?? 'We couldn’t start the password change. Try again.');
+      toast(context, r.error ?? 'We couldnâ€™t start the password change. Try again.');
       return;
     }
     auth.startOtp(OtpPurpose.reset, phone: auth.profile.phone);
@@ -293,8 +293,8 @@ class _AppSettingsScreenState extends State<AppSettingsScreen> {
         ]),
         _sectionLabel('GENERAL'),
         _group([
-          _row(IconName.location, 'Language · ${extras.language}', onTap: _pickLanguage),
-          _row(IconName.card, 'Currency · UGX', last: true, onTap: () => toast(context, 'Ugandan shilling (UGX) is the only supported currency for now.')),
+          _row(IconName.location, 'Language Â· ${extras.language}', onTap: _pickLanguage),
+          _row(IconName.card, 'Currency Â· UGX', last: true, onTap: () => toast(context, 'Ugandan shilling (UGX) is the only supported currency for now.')),
         ]),
       ]),
     );

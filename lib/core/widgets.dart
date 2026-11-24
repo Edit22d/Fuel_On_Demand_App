@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -905,7 +905,7 @@ class StationCard extends StatelessWidget {
                     Row(mainAxisSize: MainAxisSize.min, children: [
                       Ic(IconName.location, size: 13, color: FC.muted),
                       const SizedBox(width: 4),
-                      Flexible(child: Text('${s.distance} · ${s.eta}', style: fs(11.52, color: FC.muted))),
+                      Flexible(child: Text('${s.distance} Â· ${s.eta}', style: fs(11.52, color: FC.muted))),
                     ]),
                     const SizedBox(height: 14),
                     Wrap(spacing: 6, runSpacing: 6, children: [_tag('Petrol 5,180'), _tag('Diesel 4,960')]),
