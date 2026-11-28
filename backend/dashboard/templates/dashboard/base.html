@@ -1,0 +1,162 @@
+{% load static fc %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#080A0C">
+  <title>{% block title %}{{ page_title|default:"Console" }} · FuelOnDemand{% endblock %}</title>
+  <link rel="icon" href="{% static 'dashboard/img/favicon.png' %}">
+  <link rel="stylesheet" href="{% static 'dashboard/css/console.css' %}">
+  <link rel="stylesheet" href="{% static 'dashboard/css/pages.css' %}">
+  <link rel="stylesheet" href="{% static 'dashboard/css/dashboard.css' %}">
+  {% block head %}{% endblock %}
+</head>
+<body data-page="{{ active_nav }}" data-refresh="{{ refresh_ms|default:5000 }}"
+      data-pulse="{% block pulse %}on{% endblock %}">
+
+<aside class="sidebar" aria-label="Console navigation">
+  <a class="brand" href="{% url 'console:overview' %}">
+    <span class="brand-mark"><img src="{% static 'dashboard/img/logo.png' %}" alt="FuelOnDemand logo" width="30" height="30"></span>
+    <span class="brand-text">
+      <span class="brand-name">FuelOnDemand</span>
+      <span class="brand-sub">Operations</span>
+    </span>
+  </a>
+
+  <div class="env-chip">
+    <span class="pulse-dot"></span>
+    <span>Kampala · <b>LIVE</b></span>
+    <span style="margin-left:auto" class="mono tiny" data-clock>--:--</span>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-group">Operations</div>
+    <a class="nav-link {% if active_nav == 'overview' %}active{% endif %}" href="{% url 'console:overview' %}">
+      {% icon "overview" %}<span>Overview</span>
+    </a>
+    <a class="nav-link {% if active_nav == 'live' %}active{% endif %}" href="{% url 'console:live' %}">
+      {% icon "live" %}<span>Live tracking</span>
+    </a>
+    <a class="nav-link {% if active_nav == 'orders' %}active{% endif %}" href="{% url 'console:orders' %}">
+      {% icon "orders" %}<span>Orders</span>
+    </a>
+
+    <div class="nav-group">Network</div>
+    <a class="nav-link {% if active_nav == 'stations' %}active{% endif %}" href="{% url 'console:stations' %}">
+      {% icon "stations" %}<span>Stations</span>
+    </a>
+    <a class="nav-link {% if active_nav == 'riders' %}active{% endif %}" href="{% url 'console:riders' %}">
+      {% icon "riders" %}<span>Riders</span>
+      {% if alert_riders %}<span class="nav-count">{{ alert_riders }}</span>{% endif %}
+    </a>
+    <a class="nav-link {% if active_nav == 'tankers' %}active{% endif %}" href="{% url 'console:tankers' %}">
+      {% icon "fuel" %}<span>Tankers &amp; trips</span>
+      {% if alert_tankers %}<span class="nav-count">{{ alert_tankers }}</span>{% endif %}
+    </a>
+    <a class="nav-link {% if active_nav == 'customers' %}active{% endif %}" href="{% url 'console:customers' %}">
+      {% icon "customers" %}<span>Customers</span>
+    </a>
+
+    <div class="nav-group">Business</div>
+    <a class="nav-link {% if active_nav == 'payments' %}active{% endif %}" href="{% url 'console:payments' %}">
+      {% icon "payments" %}<span>Payments</span>
+    </a>
+    <a class="nav-link {% if active_nav == 'reports' %}active{% endif %}" href="{% url 'console:reports' %}">
+      {% icon "report" %}<span>Reports</span>
+    </a>
+    <a class="nav-link {% if active_nav == 'notifications' %}active{% endif %}" href="{% url 'console:notifications' %}">
+      {% icon "bell" %}<span>Notifications</span>
+      {% if alert_notifications %}<span class="nav-count">{{ alert_notifications }}</span>{% endif %}
+    </a>
+    <a class="nav-link {% if active_nav == 'support' %}active{% endif %}" href="{% url 'console:support' %}">
+      {% icon "support" %}<span>Support</span>
+      {% if alert_tickets %}<span class="nav-count">{{ alert_tickets }}</span>{% endif %}
+    </a>
+
+    <div class="nav-group">System</div>
+    <a class="nav-link {% if active_nav == 'settings' %}active{% endif %}" href="{% url 'console:settings' %}">
+      {% icon "settings" %}<span>Settings &amp; permissions</span>
+    </a>
+    <a class="nav-link {% if active_nav == 'audit' %}active{% endif %}" href="{% url 'console:audit' %}">
+      {% icon "audit" %}<span>Security log</span>
+    </a>
+  </nav>
+
+  <div class="promo">
+    <span class="promo-k">Reports ready</span>
+    <b>Automate. Optimise. Deliver.</b>
+    <p>Daily, weekly and monthly trading reports are ready to export.</p>
+    <a class="btn btn-gold btn-sm btn-block" href="{% url 'console:reports' %}">Open reports</a>
+  </div>
+
+  <div class="sidebar-foot">
+    <div class="me">
+      <span class="avatar gold">{{ console_user.initials }}</span>
+      <div style="min-width:0;flex:1">
+        <div class="me-name">{{ console_user.name }}</div>
+        <div class="me-role">{{ console_user.console_title|default:"Operations" }}</div>
+      </div>
+      <form method="post" action="{% url 'console:logout' %}">
+        {% csrf_token %}
+        <button class="logout-btn" type="submit" title="Sign out" aria-label="Sign out">{% icon "logout" 17 %}</button>
+      </form>
+    </div>
+  </div>
+</aside>
+
+<div class="shell">
+  <header class="topbar">
+    <button class="icon-btn menu-btn" data-menu aria-label="Toggle navigation">{% icon "menu" %}</button>
+    {% block topbar_lead %}
+    <a class="topbar-home" href="{% url 'console:overview' %}" aria-label="FuelOnDemand operations home">
+      <span class="pulse-dot"></span><b>FuelOnDemand</b><span class="sep">/</span><span>{{ page_title|default:"Overview" }}</span>
+    </a>
+    {% endblock %}
+
+    <div class="topbar-search">
+      <div class="search">
+        {% icon "search" %}
+        <input id="global-search" type="search" placeholder="Search orders, people…" autocomplete="off" aria-label="Search">
+        <kbd>/</kbd>
+        <div class="search-results" id="search-results" role="listbox"></div>
+      </div>
+    </div>
+
+    <div class="topbar-tools">{% block topbar_tools %}
+      <div class="live-pill" title="Live data refreshes automatically">
+        <span class="pulse-dot"></span>
+        <span class="label">Live</span>
+        <b data-pulse="active-orders">{% if kpi %}{{ kpi.active.value }}{% else %}—{% endif %}</b>
+      </div>
+
+      <a class="icon-btn" href="{% url 'console:notifications' %}" aria-label="Alerts" title="Notifications">
+        {% icon "bell" %}
+        {% if alert_riders or alert_tickets or alert_notifications %}<span class="dot"></span>{% endif %}
+      </a>
+
+      <a class="icon-btn" href="{% url 'console:settings' %}" aria-label="Settings and permissions" title="Settings &amp; permissions">
+        {% icon "settings" %}
+      </a>
+    {% endblock %}</div>
+  </header>
+
+  <main class="content">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<div class="toasts" aria-live="polite">
+  {% for message in messages %}
+    <div class="toast {{ message.tags }}">
+      <div>{{ message }}</div>
+    </div>
+  {% endfor %}
+</div>
+
+<script src="{% static 'dashboard/js/charts.js' %}"></script>
+<script src="{% static 'dashboard/js/map.js' %}"></script>
+<script src="{% static 'dashboard/js/console.js' %}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

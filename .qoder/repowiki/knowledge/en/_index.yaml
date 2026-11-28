@@ -1,0 +1,42 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: en-US
+branch: master
+nodes_managed: true
+exported_at: "2026-11-26T15:18:09Z"
+modules:
+    "":
+        dir_name: FuelConnect Full-Stack Platform
+        title: FuelConnect Full-Stack Platform
+        scope:
+            - README.md
+            - flutter_app.zip
+            - screenshot_initial.png
+            - screenshot_reload.png
+            - screenshot_waiting.png
+        source_files: []
+        children:
+            - backend
+            - flutter_app
+        depends_on: []
+        related_to: []
+    backend:
+        dir_name: FuelConnect Backend API (NestJS + Prisma)
+        title: FuelConnect Backend API (NestJS + Prisma)
+        scope:
+            - backend/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: flutter_app
+    flutter_app:
+        dir_name: FuelConnect Flutter Frontend App
+        title: FuelConnect Flutter Frontend App
+        scope:
+            - flutter_app/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: backend

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../core/core.dart';
 import '../services/auth_service.dart';
+import '../services/location_service.dart';
 import 'sheets.dart';
 
 // ===========================================================================
@@ -17,8 +18,11 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
-  late final AnimationController _ac = AnimationController(vsync: this, duration: const Duration(milliseconds: 1400))..repeat();
+class _SplashScreenState extends State<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ac = AnimationController(
+      vsync: this, duration: const Duration(milliseconds: 1400))
+    ..repeat();
   Timer? _t;
 
   @override
@@ -50,29 +54,38 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         color: FC.black,
         child: Stack(children: [
           Positioned.fill(
-            child: Glow(fx: .5, fy: .37, colors: [Color(0xFF26220E), Color(0xFF0D0F11), FC.black], stops: [0, .34, .67]),
+            child: Glow(
+                fx: .5,
+                fy: .37,
+                colors: [Color(0xFF26220E), Color(0xFF0D0F11), FC.black],
+                stops: [0, .34, .67]),
           ),
           Center(
             child: ImageFiltered(
               imageFilter: ui.ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-              child: Container(width: 300, height: 300, decoration: BoxDecoration(shape: BoxShape.circle, color: al(FC.gold, .08))),
+              child: Container(
+                  width: 300,
+                  height: 300,
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle, color: al(FC.gold, .08))),
             ),
           ),
           Center(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               Transform.scale(
-  scale: 1.35,
-  child: Image.asset(
-    'assets/images/logo.png',
-    width: 220,
-    height: 220,
-    fit: BoxFit.contain,
-  ),
-),
+                scale: 1.35,
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: 220,
+                  height: 220,
+                  fit: BoxFit.contain,
+                ),
+              ),
               const SizedBox(height: 28),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 260),
-                child: FcText('Fuel, delivered wherever the road takes you.', kind: Tx.caption, color: FC.muted, align: TextAlign.center),
+                child: FcText('Fuel, delivered wherever the road takes you.',
+                    kind: Tx.caption, color: FC.muted, align: TextAlign.center),
               ),
             ]),
           ),
@@ -95,7 +108,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                         final x = -37.8 + (83.16 + 37.8) * t;
                         return Transform.translate(
                           offset: Offset(x, 0),
-                          child: Align(alignment: Alignment.centerLeft, child: Container(width: 37.8, color: FC.gold)),
+                          child: Align(
+                              alignment: Alignment.centerLeft,
+                              child: Container(width: 37.8, color: FC.gold)),
                         );
                       },
                     ),
@@ -134,12 +149,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final s = kSlides[_i];
-    final wide = isWide(context);
+    // Below ~900px the image/copy split leaves too little room for the copy
+    // column, so portrait tablets and phones use the stacked layout instead.
+    final wide = vw(context) >= 900;
     final h = cl(context, 20, 5, 56);
     final image = Stack(fit: StackFit.expand, children: [
       AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
-        child: Image.asset(s.image, key: ValueKey(s.image), fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+        child: Image.asset(s.image,
+            key: ValueKey(s.image),
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity),
       ),
       const ImageShade(),
       Positioned(
@@ -147,14 +168,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         left: 0,
         right: 0,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(h, topInset(context) + 24, math.max(h, kRightInset), 0),
-          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          padding: EdgeInsets.fromLTRB(
+              h, topInset(context) + 24, math.max(h, kRightInset), 0),
+          child:
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Image.asset(
-  'assets/images/logo.png',
-  width: 100,
-  height: 55,
-  fit: BoxFit.contain,
-),
+              'assets/images/logo.png',
+              width: 100,
+              height: 55,
+              fit: BoxFit.contain,
+            ),
             TextAction('Skip', onTap: () => widget.go(Screen.login)),
           ]),
         ),
@@ -167,7 +190,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         child: ConstrainedBox(
           constraints: BoxConstraints(minHeight: cons.maxHeight),
           child: Padding(
-            padding: wide ? EdgeInsets.symmetric(horizontal: vw(context) * .07, vertical: vw(context) * .09) : EdgeInsets.fromLTRB(pad, 10, pad, 34),
+            padding: wide
+                ? EdgeInsets.symmetric(
+                    horizontal: cl(context, 24, 6, 72),
+                    vertical: vw(context) * .09)
+                : EdgeInsets.fromLTRB(pad, 10, pad, 34),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -177,27 +204,41 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   const SizedBox(height: 15),
                   FcText(s.title, kind: Tx.display),
                   const SizedBox(height: 15),
-                  ConstrainedBox(constraints: const BoxConstraints(maxWidth: 500), child: FcText(s.body, color: FC.muted)),
+                  ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 500),
+                      child: FcText(s.body, color: FC.muted)),
                 ]),
                 Column(mainAxisSize: MainAxisSize.min, children: [
                   const SizedBox(height: 18),
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Row(children: [
-                      for (var d = 0; d < kSlides.length; d++)
-                        Tap(
-                          onTap: () => setState(() => _i = d),
-                          child: Padding(
-                            padding: const EdgeInsets.only(right: 7, top: 6, bottom: 6),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: d == _i ? 28 : 7,
-                              height: 7,
-                              decoration: BoxDecoration(color: d == _i ? FC.gold : FC.dim, borderRadius: BorderRadius.circular(9)),
+                  Row(children: [
+                    Expanded(
+                      child: Row(children: [
+                        for (var d = 0; d < kSlides.length; d++)
+                          Tap(
+                            onTap: () => setState(() => _i = d),
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                  right: 7, top: 6, bottom: 6),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: d == _i ? 28 : 7,
+                                height: 7,
+                                decoration: BoxDecoration(
+                                    color: d == _i ? FC.gold : FC.dim,
+                                    borderRadius: BorderRadius.circular(9)),
+                              ),
                             ),
                           ),
-                        ),
-                    ]),
-                    FcButton(_i == kSlides.length - 1 ? 'Get started' : 'Continue', expand: false, trailingIcon: IconName.arrow, onTap: _next),
+                      ]),
+                    ),
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: FcButton(
+                          _i == kSlides.length - 1 ? 'Get started' : 'Continue',
+                          expand: false,
+                          trailingIcon: IconName.arrow,
+                          onTap: _next),
+                    ),
                   ]),
                 ]),
               ],
@@ -210,12 +251,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (wide) {
       return ColoredBox(
         color: FC.black,
-        child: Row(children: [Expanded(flex: 56, child: image), Expanded(flex: 44, child: copy)]),
+        child: Row(children: [
+          Expanded(flex: 56, child: image),
+          Expanded(flex: 44, child: copy)
+        ]),
       );
     }
     return ColoredBox(
       color: FC.black,
-      child: Column(children: [SizedBox(height: vh(context) * .56, child: image), Expanded(child: copy)]),
+      child: Column(children: [
+        SizedBox(height: vh(context) * .56, child: image),
+        Expanded(child: copy)
+      ]),
     );
   }
 }
@@ -225,22 +272,39 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 // ===========================================================================
 class _AuthLayout extends StatelessWidget {
   final List<Widget> children;
-  const _AuthLayout({required this.children});
+  final VoidCallback? onBack;
+  const _AuthLayout({required this.children, this.onBack});
 
   @override
   Widget build(BuildContext context) {
-    final wide = isWide(context);
+    // Same breakpoint as onboarding: portrait tablets get the stacked layout so
+    // the form keeps a comfortable width.
+    final wide = vw(context) >= 900;
+    final body = onBack == null
+        ? children
+        : <Widget>[
+            Align(
+                alignment: Alignment.centerLeft,
+                child: FcButton.icon(IconName.arrow,
+                    key: const ValueKey('page-back'), onTap: onBack!)),
+            ...children
+          ];
     final visual = Stack(fit: StackFit.expand, children: [
-      Image.asset('assets/images/pump.jpg', fit: BoxFit.cover, width: double.infinity, height: double.infinity),
+      Image.asset('assets/images/pump.png',
+          fit: BoxFit.cover, width: double.infinity, height: double.infinity),
       const ImageShade(),
-      Positioned(left: 24, top: topInset(context) + 24, child: const Logo(compact: true)),
+      Positioned(
+          left: 24,
+          top: topInset(context) + 24,
+          child: const Logo(compact: true)),
     ]);
     final pad = cl(context, 22, 6, 70);
     if (wide) {
       return ColoredBox(
         color: FC.black,
         child: Row(children: [
-          SizedBox(width: vw(context) * .54, height: double.infinity, child: visual),
+          SizedBox(
+              width: vw(context) * .54, height: double.infinity, child: visual),
           Expanded(
             child: LayoutBuilder(
               builder: (c, cons) => SingleChildScrollView(
@@ -248,10 +312,14 @@ class _AuthLayout extends StatelessWidget {
                   constraints: BoxConstraints(minHeight: cons.maxHeight),
                   child: Center(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: vw(context) * .08, vertical: vh(context) * .08),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: cl(context, 24, 6, 72),
+                          vertical: vh(context) * .08),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 480),
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: gapped(children, 15)),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: gapped(body, 15)),
                       ),
                     ),
                   ),
@@ -265,11 +333,15 @@ class _AuthLayout extends StatelessWidget {
     return ColoredBox(
       color: FC.black,
       child: SingleChildScrollView(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           SizedBox(height: math.max(240, vh(context) * .34), child: visual),
           Padding(
-            padding: EdgeInsets.fromLTRB(pad, 12, pad, 36 + bottomInset(context)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: gapped(children, 15)),
+            padding:
+                EdgeInsets.fromLTRB(pad, 12, pad, 36 + bottomInset(context)),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: gapped(body, 15)),
           ),
         ]),
       ),
@@ -283,7 +355,9 @@ class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(children: [
         Expanded(child: Divider(color: FC.line, height: 1)),
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: FcText(text, kind: Tx.caption, color: FC.dim)),
+        Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: FcText(text, kind: Tx.caption, color: FC.dim)),
         Expanded(child: Divider(color: FC.line, height: 1)),
       ]);
 }
@@ -294,11 +368,20 @@ class _InlineLink extends StatelessWidget {
   const _InlineLink(this.lead, this.link, this.onTap);
   @override
   Widget build(BuildContext context) => Center(
-        child: Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center, children: [
-          FcText(lead, kind: Tx.caption, color: FC.muted),
-          const SizedBox(width: 4),
-          Tap(onTap: onTap, child: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Text(link, style: fs(11.52, color: FC.gold, w: FontWeight.w700)))),
-        ]),
+        child: Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              FcText(lead, kind: Tx.caption, color: FC.muted),
+              const SizedBox(width: 4),
+              Tap(
+                  onTap: onTap,
+                  child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text(link,
+                          style:
+                              fs(11.52, color: FC.gold, w: FontWeight.w700)))),
+            ]),
       );
 }
 
@@ -340,24 +423,48 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _formErr = r.error);
       return;
     }
-    auth.startOtp(OtpPurpose.login, phone: _phone.text);
-    widget.go(Screen.otp);
+    widget.go(r.otpRequired ? Screen.otp : Screen.locationAccess,
+        replace: true);
   }
 
   @override
   Widget build(BuildContext context) {
-    return _AuthLayout(children: [
+    return _AuthLayout(onBack: () => app.backOr(Screen.onboarding), children: [
       FcText('WELCOME BACK', kind: Tx.label, color: FC.gold),
-      const FcText('Sign in to FuelConnect', kind: Tx.title),
-      FcText('Fuel from trusted stations, delivered wherever you are.', color: FC.muted),
-      FcField(label: 'Phone number', hint: '+256 700 123 456', icon: IconName.phone, controller: _phone, keyboard: TextInputType.phone, error: _phoneErr, action: TextInputAction.next),
-      FcField(label: 'Password', hint: 'Enter your password', icon: IconName.shield, password: true, controller: _pass, error: _passErr, action: TextInputAction.done, onSubmitted: (_) => _submit()),
-      Align(alignment: Alignment.centerRight, child: TextAction('Forgot password?', onTap: () => widget.go(Screen.forgot))),
+      const FcText('Sign in to FuelOnDemand', kind: Tx.title),
+      FcText('Fuel from trusted stations, delivered wherever you are.',
+          color: FC.muted),
+      FcField(
+          label: 'Phone number',
+          hint: '+256 700 123 456',
+          icon: IconName.phone,
+          controller: _phone,
+          keyboard: TextInputType.phone,
+          error: _phoneErr,
+          action: TextInputAction.next),
+      FcField(
+          label: 'Password',
+          hint: 'Enter your password',
+          icon: IconName.shield,
+          password: true,
+          showToggle: true,
+          controller: _pass,
+          error: _passErr,
+          action: TextInputAction.done,
+          onSubmitted: (_) => _submit()),
+      Align(
+          alignment: Alignment.centerRight,
+          child: TextAction('Forgot password?',
+              onTap: () => widget.go(Screen.forgot))),
       if (_formErr != null) FormError(_formErr!),
       FcButton('Sign in securely', loading: _busy, onTap: _submit),
       const _Divider('or continue with'),
-      FcButton('Continue with Google', variant: BV.outline, onTap: () => toast(context, 'Google sign-in will be available once the backend is connected.')),
-      _InlineLink('New to FuelConnect?', 'Create account', () => widget.go(Screen.signup)),
+      FcButton('Continue with Google',
+          variant: BV.outline,
+          onTap: () =>
+              toast(context, 'Google sign-in is not enabled for this build.')),
+      _InlineLink('New to FuelOnDemand?', 'Create account',
+          () => widget.go(Screen.signup)),
     ]);
   }
 }
@@ -395,37 +502,79 @@ class _SignupScreenState extends State<SignupScreen> {
       _phoneErr = Validators.phone(_phone.text);
       _emailErr = Validators.email(_email.text);
       _passErr = Validators.password(_pass.text);
-      _formErr = _agree ? null : 'Please accept the Terms of Service and Fuel Delivery Safety Policy to continue.';
+      _formErr = _agree
+          ? null
+          : 'Please accept the Terms of Service and Fuel Delivery Safety Policy to continue.';
     });
-    if ([_nameErr, _phoneErr, _emailErr, _passErr, _formErr].any((e) => e != null)) return;
+    if ([_nameErr, _phoneErr, _emailErr, _passErr, _formErr]
+        .any((e) => e != null)) {
+      return;
+    }
     setState(() => _busy = true);
-    final r = await auth.signUp(name: _name.text, phone: _phone.text, email: _email.text, password: _pass.text);
+    final r = await auth.signUp(
+        name: _name.text,
+        phone: _phone.text,
+        email: _email.text,
+        password: _pass.text);
     if (!mounted) return;
     setState(() => _busy = false);
     if (!r.ok) {
       setState(() => _formErr = r.error);
       return;
     }
-    auth.startOtp(OtpPurpose.signup, phone: _phone.text);
-    widget.go(Screen.otp);
+    widget.go(r.otpRequired ? Screen.otp : Screen.locationAccess,
+        replace: true);
   }
 
   @override
   Widget build(BuildContext context) {
     return AppPage(
-      header: PageHeader(title: 'Create account', goBack: () => app.backOr(Screen.login)),
+      header: PageHeader(
+          title: 'Create account', goBack: () => app.backOr(Screen.login)),
       body: Narrow(gap: 20, children: [
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          FcText('JOIN FUELCONNECT', kind: Tx.label, color: FC.gold),
+          FcText('JOIN FuelOnDemand', kind: Tx.label, color: FC.gold),
           SizedBox(height: 9),
           FcText('Let’s get you moving.', kind: Tx.title),
           SizedBox(height: 9),
-          FcText('Create an account for safe, trackable fuel delivery.', color: FC.muted),
+          FcText('Create an account for safe, trackable fuel delivery.',
+              color: FC.muted),
+          FcText('We’ll email you a 6-digit code to confirm your account.',
+              kind: Tx.caption, color: FC.muted),
         ]),
-        FcField(label: 'Full name', hint: 'Your full name', icon: IconName.profile, controller: _name, error: _nameErr, action: TextInputAction.next),
-        FcField(label: 'Phone number', hint: '+256 700 123 456', icon: IconName.phone, controller: _phone, keyboard: TextInputType.phone, error: _phoneErr, action: TextInputAction.next),
-        FcField(label: 'Email address', hint: 'name@email.com', icon: IconName.card, controller: _email, keyboard: TextInputType.emailAddress, error: _emailErr, action: TextInputAction.next),
-        FcField(label: 'Create password', hint: 'At least 8 characters', icon: IconName.shield, password: true, controller: _pass, error: _passErr, action: TextInputAction.done, onSubmitted: (_) => _submit()),
+        FcField(
+            label: 'Full name',
+            hint: 'Your full name',
+            icon: IconName.profile,
+            controller: _name,
+            error: _nameErr,
+            action: TextInputAction.next),
+        FcField(
+            label: 'Phone number',
+            hint: '+256 700 123 456',
+            icon: IconName.phone,
+            controller: _phone,
+            keyboard: TextInputType.phone,
+            error: _phoneErr,
+            action: TextInputAction.next),
+        FcField(
+            label: 'Email address',
+            hint: 'name@email.com',
+            icon: IconName.card,
+            controller: _email,
+            keyboard: TextInputType.emailAddress,
+            error: _emailErr,
+            action: TextInputAction.next),
+        FcField(
+            label: 'Create password',
+            hint: 'At least 8 characters',
+            icon: IconName.shield,
+            password: true,
+            showToggle: true,
+            controller: _pass,
+            error: _passErr,
+            action: TextInputAction.done,
+            onSubmitted: (_) => _submit()),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           SizedBox(
             width: 20,
@@ -440,11 +589,16 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
           ),
           const SizedBox(width: 10),
-          Expanded(child: FcText('I agree to the Terms of Service and Fuel Delivery Safety Policy.', kind: Tx.caption, color: FC.muted)),
+          Expanded(
+              child: FcText(
+                  'I agree to the Terms of Service and Fuel Delivery Safety Policy.',
+                  kind: Tx.caption,
+                  color: FC.muted)),
         ]),
         if (_formErr != null) FormError(_formErr!),
         FcButton('Create secure account', loading: _busy, onTap: _submit),
-        _InlineLink('Already registered?', 'Sign in', () => app.backOr(Screen.login)),
+        _InlineLink(
+            'Already registered?', 'Sign in', () => app.backOr(Screen.login)),
       ]),
     );
   }
@@ -488,18 +642,22 @@ class _ForgotScreenState extends State<ForgotScreen> {
       setState(() => _err = r.error);
       return;
     }
-    auth.startOtp(OtpPurpose.reset, phone: _phone.text);
     widget.go(Screen.otp);
   }
 
   @override
   Widget build(BuildContext context) {
     return AppPage(
-      header: PageHeader(title: 'Reset password', goBack: () => app.backOr(Screen.login)),
+      header: PageHeader(
+          title: 'Reset password', goBack: () => app.backOr(Screen.login)),
       body: Narrow(gap: 20, padTop: vh(context) * .10, children: [
         const RoundFeature(IconName.shield),
-        const FcText('Recover your account', kind: Tx.title, align: TextAlign.center),
-        FcText('Enter your registered phone number. We’ll send you a secure reset code.', color: FC.muted, align: TextAlign.center),
+        const FcText('Recover your account',
+            kind: Tx.title, align: TextAlign.center),
+        FcText(
+            'Enter your registered phone number. We’ll send a reset code to the email address on your account.',
+            color: FC.muted,
+            align: TextAlign.center),
         FcField(
           label: 'Phone number',
           hint: '+256 700 123 456',
@@ -512,7 +670,8 @@ class _ForgotScreenState extends State<ForgotScreen> {
           onSubmitted: (_) => _send(),
         ),
         FcButton('Send reset code', loading: _busy, onTap: _send),
-        FcButton('Return to sign in', variant: BV.ghost, onTap: () => app.backOr(Screen.login)),
+        FcButton('Return to sign in',
+            variant: BV.ghost, onTap: () => app.backOr(Screen.login)),
       ]),
     );
   }
@@ -523,7 +682,8 @@ class _ForgotScreenState extends State<ForgotScreen> {
 // ===========================================================================
 class _UpperCase extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue o, TextEditingValue n) => n.copyWith(text: n.text.toUpperCase());
+  TextEditingValue formatEditUpdate(TextEditingValue o, TextEditingValue n) =>
+      n.copyWith(text: n.text.toUpperCase());
 }
 
 class CodeInput extends StatelessWidget {
@@ -532,7 +692,13 @@ class CodeInput extends StatelessWidget {
   final bool error;
   final VoidCallback onChanged;
   final VoidCallback onSubmit;
-  const CodeInput({super.key, required this.controller, required this.focus, required this.error, required this.onChanged, required this.onSubmit});
+  const CodeInput(
+      {super.key,
+      required this.controller,
+      required this.focus,
+      required this.error,
+      required this.onChanged,
+      required this.onSubmit});
 
   @override
   Widget build(BuildContext context) {
@@ -559,9 +725,15 @@ class CodeInput extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: FC.surface,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: error ? FC.danger : (focus.hasFocus && i == active ? FC.gold : FC.line)),
+                        border: Border.all(
+                            color: error
+                                ? FC.danger
+                                : (focus.hasFocus && i == active
+                                    ? FC.gold
+                                    : FC.line)),
                       ),
-                      child: Text(i < text.length ? text[i] : '', style: fs(20.8, w: FontWeight.w700, h: 1)),
+                      child: Text(i < text.length ? text[i] : '',
+                          style: fs(20.8, w: FontWeight.w700, h: 1)),
                     ),
                   ],
                 ]),
@@ -575,10 +747,15 @@ class CodeInput extends StatelessWidget {
                     expands: true,
                     maxLines: null,
                     minLines: null,
-                    keyboardType: kOtpAlphanumeric ? TextInputType.text : TextInputType.number,
+                    keyboardType: kOtpAlphanumeric
+                        ? TextInputType.text
+                        : TextInputType.number,
                     textInputAction: TextInputAction.done,
                     inputFormatters: [
-                      kOtpAlphanumeric ? FilteringTextInputFormatter.allow(RegExp('[A-Za-z0-9]')) : FilteringTextInputFormatter.digitsOnly,
+                      kOtpAlphanumeric
+                          ? FilteringTextInputFormatter.allow(
+                              RegExp('[A-Za-z0-9]'))
+                          : FilteringTextInputFormatter.digitsOnly,
                       LengthLimitingTextInputFormatter(kOtpLength),
                       if (kOtpAlphanumeric) _UpperCase(),
                     ],
@@ -587,8 +764,12 @@ class CodeInput extends StatelessWidget {
                     autocorrect: false,
                     showCursor: false,
                     cursorColor: Colors.transparent,
-                    style: const TextStyle(color: Colors.transparent, fontSize: 1),
-                    decoration: const InputDecoration(border: InputBorder.none, counterText: '', contentPadding: EdgeInsets.zero),
+                    style:
+                        const TextStyle(color: Colors.transparent, fontSize: 1),
+                    decoration: const InputDecoration(
+                        border: InputBorder.none,
+                        counterText: '',
+                        contentPadding: EdgeInsets.zero),
                     onChanged: (_) => onChanged(),
                     onSubmitted: (_) => onSubmit(),
                   ),
@@ -614,17 +795,22 @@ class _OtpScreenState extends State<OtpScreen> {
   final _focus = FocusNode();
   Timer? _tick;
   String? _error;
-  bool _busy = false;
+  bool _busy = false, _resending = false;
 
   @override
   void initState() {
     super.initState();
-    // Opened from the menu without signing in first: start a demo challenge.
-    if (!auth.hasPending) auth.startOtp(OtpPurpose.login, phone: AuthService.demoPhone);
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) => _announce());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!auth.hasPending) {
+        widget.go(Screen.login, replace: true);
+        return;
+      }
+      _announce();
+    });
   }
 
   @override
@@ -636,8 +822,9 @@ class _OtpScreenState extends State<OtpScreen> {
   }
 
   void _announce() {
-    if (kDemoMode && auth.code != null && mounted) {
-      toast(context, 'Demo mode · your code is ${auth.code}', gold: true, seconds: 25);
+    if (kShowDevOtp && auth.code != null && mounted) {
+      toast(context, 'Dev build · your code is ${auth.code}',
+          gold: true, seconds: 25);
     }
   }
 
@@ -651,8 +838,7 @@ class _OtpScreenState extends State<OtpScreen> {
       _busy = true;
       _error = null;
     });
-    await Future.delayed(const Duration(milliseconds: 600));
-    final r = auth.verifyOtp(code);
+    final r = await auth.verifyOtp(code);
     if (!mounted) return;
     setState(() => _busy = false);
     if (!r.ok) {
@@ -662,37 +848,77 @@ class _OtpScreenState extends State<OtpScreen> {
       return;
     }
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    widget.go(r.purpose == OtpPurpose.reset ? Screen.newPassword : Screen.locationAccess, replace: true);
+    widget.go(
+        r.purpose == OtpPurpose.reset
+            ? Screen.newPassword
+            : Screen.locationAccess,
+        replace: true);
   }
 
-  void _resend() {
-    final p = auth.purpose ?? OtpPurpose.login;
-    auth.startOtp(p, phone: auth.pendingPhone ?? AuthService.demoPhone);
+  Future<void> _resend() async {
+    final p = auth.purpose;
+    final phone = auth.pendingPhone;
+    if (p == null || phone == null) return;
+    setState(() {
+      _resending = true;
+      _error = null;
+    });
+    final r = await auth.startOtp(p, phone: phone);
+    if (!mounted) return;
+    setState(() => _resending = false);
+    if (!r.ok) {
+      setState(() => _error = r.error);
+      return;
+    }
     _ctrl.clear();
-    setState(() => _error = null);
     _announce();
     _focus.requestFocus();
   }
 
-  String _mmss(int s) => '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
+  String _mmss(int s) =>
+      '${(s ~/ 60).toString().padLeft(2, '0')}:${(s % 60).toString().padLeft(2, '0')}';
 
   @override
   Widget build(BuildContext context) {
     final left = auth.secondsLeft;
     final resendIn = auth.resendIn;
-    final phone = maskPhone(auth.pendingPhone ?? AuthService.demoPhone);
+    final purpose = auth.purpose;
+    final isReset = purpose == OtpPurpose.reset;
+    final isSignup = purpose == OtpPurpose.signup;
+    final rawDestination = auth.destination ?? auth.pendingPhone ?? '';
+    final destination = rawDestination.contains('@')
+        ? maskEmail(rawDestination)
+        : maskPhone(rawDestination);
+    final channel =
+        auth.deliveryChannel == 'email' || rawDestination.contains('@')
+            ? 'email address'
+            : 'phone number';
+    final title = isReset
+        ? 'Reset your password'
+        : (isSignup ? 'Confirm your account' : 'Verify it’s you');
     return AppPage(
       header: PageHeader(
         title: 'Verification',
-        goBack: () => app.backOr(auth.purpose == OtpPurpose.reset ? Screen.forgot : Screen.login),
+        goBack: () => app.backOr(isReset
+            ? Screen.forgot
+            : (isSignup ? Screen.signup : Screen.login)),
       ),
       body: Narrow(gap: 20, padTop: vh(context) * .10, children: [
         const RoundFeature(IconName.phone),
-        const FcText('Check your phone', kind: Tx.title, align: TextAlign.center),
+        FcText(title, kind: Tx.title, align: TextAlign.center),
         Column(children: [
-          FcText('We sent a 6-digit security code to', color: FC.muted, align: TextAlign.center),
-          FcText(phone, color: FC.ink, weight: FontWeight.w700, align: TextAlign.center),
+          FcText('We sent a 6-digit security code to your',
+              color: FC.muted, align: TextAlign.center),
+          FcText(channel, color: FC.muted, align: TextAlign.center),
+          FcText(destination,
+              color: FC.ink, weight: FontWeight.w700, align: TextAlign.center),
         ]),
+        if (!auth.confirmationSent)
+          FcText(
+              'We couldn’t deliver the code. Wait for the timer, then choose Send code again.',
+              kind: Tx.caption,
+              color: FC.danger,
+              align: TextAlign.center),
         CodeInput(
           controller: _ctrl,
           focus: _focus,
@@ -702,13 +928,24 @@ class _OtpScreenState extends State<OtpScreen> {
           },
           onSubmit: _verify,
         ),
-        if (_error != null) FcText(_error!, kind: Tx.caption, color: FC.danger, align: TextAlign.center),
+        if (_error != null)
+          FcText(_error!,
+              kind: Tx.caption, color: FC.danger, align: TextAlign.center),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          FcText(left > 0 ? 'Code expires in ' : 'Code expired', kind: Tx.caption, color: FC.muted),
-          if (left > 0) Text(_mmss(left), style: fs(11.52, color: FC.gold, w: FontWeight.w700)),
+          // Wraps instead of overflowing when the system font is enlarged.
+          Flexible(
+              child: FcText(left > 0 ? 'Code expires in ' : 'Code expired',
+                  kind: Tx.caption, color: FC.muted, align: TextAlign.center)),
+          if (left > 0)
+            Text(_mmss(left),
+                style: fs(11.52, color: FC.gold, w: FontWeight.w700)),
         ]),
         FcButton('Verify & continue', loading: _busy, onTap: _verify),
-        FcButton(resendIn > 0 ? 'Send code again (${resendIn}s)' : 'Send code again', variant: BV.ghost, onTap: resendIn > 0 ? null : _resend),
+        FcButton(
+            resendIn > 0 ? 'Send code again (${resendIn}s)' : 'Send code again',
+            variant: BV.ghost,
+            loading: _resending,
+            onTap: resendIn > 0 || _resending ? null : _resend),
       ]),
     );
   }
@@ -740,7 +977,9 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   Future<void> _submit() async {
     setState(() {
       _err1 = Validators.password(_p1.text);
-      _err2 = _p2.text.isEmpty ? 'Confirm your new password' : (_p2.text != _p1.text ? 'Passwords don’t match' : null);
+      _err2 = _p2.text.isEmpty
+          ? 'Confirm your new password'
+          : (_p2.text != _p1.text ? 'Passwords don’t match' : null);
       _form = null;
     });
     if (_err1 != null || _err2 != null) return;
@@ -759,30 +998,56 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
         Container(
           width: 18,
           height: 18,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: ok ? al(FC.green, .15) : Colors.transparent, border: Border.all(color: ok ? FC.green : FC.dim)),
-          child: ok ? Center(child: Ic(IconName.check, size: 11, color: FC.green)) : null,
+          decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: ok ? al(FC.green, .15) : Colors.transparent,
+              border: Border.all(color: ok ? FC.green : FC.dim)),
+          child: ok
+              ? Center(child: Ic(IconName.check, size: 11, color: FC.green))
+              : null,
         ),
         const SizedBox(width: 10),
-        Expanded(child: FcText(text, kind: Tx.caption, color: ok ? FC.ink : FC.muted)),
+        Expanded(
+            child:
+                FcText(text, kind: Tx.caption, color: ok ? FC.ink : FC.muted)),
       ]);
 
   @override
   Widget build(BuildContext context) {
     if (_done) {
       return AppPage(
-        header: const PageHeader(title: 'New password'),
+        header: PageHeader(
+            title: 'New password',
+            goBack: () => widget.go(Screen.login, root: true)),
         body: Narrow(gap: 20, padTop: vh(context) * .10, children: [
           Center(
             child: Container(
               width: 82,
               height: 82,
-              decoration: BoxDecoration(shape: BoxShape.circle, gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [FC.gold, FC.goldDeep]), boxShadow: [BoxShadow(color: al(FC.gold, .18), blurRadius: 45, offset: const Offset(0, 14))]),
-              child: Center(child: Ic(IconName.check, size: 44, color: FC.onGold)),
+              decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [FC.gold, FC.goldDeep]),
+                  boxShadow: [
+                    BoxShadow(
+                        color: al(FC.gold, .18),
+                        blurRadius: 45,
+                        offset: const Offset(0, 14))
+                  ]),
+              child:
+                  Center(child: Ic(IconName.check, size: 44, color: FC.onGold)),
             ),
           ),
-          const FcText('Password updated', kind: Tx.title, align: TextAlign.center),
-          FcText('Your password has been changed. Sign in with your new password to continue.', color: FC.muted, align: TextAlign.center),
-          FcButton('Back to sign in', onTap: () => widget.go(Screen.login, root: true)),
+          const FcText('Password updated',
+              kind: Tx.title, align: TextAlign.center),
+          FcText(
+              'Your password has been changed. Sign in with your new password to continue.',
+              color: FC.muted,
+              align: TextAlign.center),
+          FcButton('Back to sign in',
+              onTap: () => widget.go(Screen.login, root: true)),
         ]),
       );
     }
@@ -790,41 +1055,82 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
     final p = _p1.text;
     final strength = Validators.strength(p);
     final strengthLabel = ['', 'Weak', 'Fair', 'Good', 'Strong'][strength];
-    final strengthColor = strength <= 1 ? FC.danger : (strength == 4 ? FC.green : FC.gold);
+    final strengthColor =
+        strength <= 1 ? FC.danger : (strength == 4 ? FC.green : FC.gold);
     final match = _p2.text.isNotEmpty;
     final matches = _p2.text == _p1.text;
 
     return AppPage(
-      header: PageHeader(title: 'New password', goBack: () => app.backOr(Screen.login)),
+      header: PageHeader(
+          title: 'New password', goBack: () => app.backOr(Screen.login)),
       body: Narrow(gap: 20, children: [
         const RoundFeature(IconName.shield),
-        const FcText('Create a new password', kind: Tx.title, align: TextAlign.center),
-        FcText('Choose a strong password you haven’t used before. You’ll use it to sign in to FuelConnect.', color: FC.muted, align: TextAlign.center),
-        FcField(label: 'New password', hint: 'At least 8 characters', icon: IconName.shield, password: true, showToggle: true, controller: _p1, error: _err1, action: TextInputAction.next, onChanged: (_) => setState(() {})),
+        const FcText('Create a new password',
+            kind: Tx.title, align: TextAlign.center),
+        FcText(
+            'Choose a strong password you haven’t used before. You’ll use it to sign in to FuelOnDemand.',
+            color: FC.muted,
+            align: TextAlign.center),
+        FcField(
+            label: 'New password',
+            hint: 'At least 8 characters',
+            icon: IconName.shield,
+            password: true,
+            showToggle: true,
+            controller: _p1,
+            error: _err1,
+            action: TextInputAction.next,
+            onChanged: (_) => setState(() {})),
         if (p.isNotEmpty)
           Row(children: [
             for (var i = 0; i < 4; i++) ...[
               if (i > 0) const SizedBox(width: 6),
-              Expanded(child: AnimatedContainer(duration: const Duration(milliseconds: 200), height: 4, decoration: BoxDecoration(color: i < strength ? strengthColor : FC.line, borderRadius: BorderRadius.circular(4)))),
+              Expanded(
+                  child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      height: 4,
+                      decoration: BoxDecoration(
+                          color: i < strength ? strengthColor : FC.line,
+                          borderRadius: BorderRadius.circular(4)))),
             ],
             const SizedBox(width: 10),
-            Text(strengthLabel, style: fs(10.88, color: strengthColor, w: FontWeight.w700)),
+            Text(strengthLabel,
+                style: fs(10.88, color: strengthColor, w: FontWeight.w700)),
           ]),
-        FcField(label: 'Confirm new password', hint: 'Re-enter your password', icon: IconName.shield, password: true, showToggle: true, controller: _p2, error: _err2, action: TextInputAction.done, onChanged: (_) => setState(() {}), onSubmitted: (_) => _submit()),
-        if (match && _err2 == null) FcText(matches ? 'Passwords match' : 'Passwords don’t match yet', kind: Tx.caption, color: matches ? FC.green : FC.danger),
+        FcField(
+            label: 'Confirm new password',
+            hint: 'Re-enter your password',
+            icon: IconName.shield,
+            password: true,
+            showToggle: true,
+            controller: _p2,
+            error: _err2,
+            action: TextInputAction.done,
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) => _submit()),
+        if (match && _err2 == null)
+          FcText(matches ? 'Passwords match' : 'Passwords don’t match yet',
+              kind: Tx.caption, color: matches ? FC.green : FC.danger),
         Panel(
           radius: 12,
           padding: const EdgeInsets.all(14),
-          child: Column(children: gapped([
+          child: Column(
+              children: gapped([
             _rule('At least 8 characters', Validators.hasLen(p)),
-            _rule('Includes a letter and a number', Validators.hasLetterAndNumber(p)),
+            _rule('Includes a letter and a number',
+                Validators.hasLetterAndNumber(p)),
             _rule('Both fields match', match && matches && p.isNotEmpty),
           ], 10)),
         ),
         if (_form != null) FormError(_form!),
-        if (_form != null && !auth.resetVerified) FcButton('Start password reset', variant: BV.outline, onTap: () => widget.go(Screen.forgot, replace: true)),
+        if (_form != null && !auth.resetVerified)
+          FcButton('Start password reset',
+              variant: BV.outline,
+              onTap: () => widget.go(Screen.forgot, replace: true)),
         FcButton('Update password', loading: _busy, onTap: _submit),
-        FcButton('Cancel and return to sign in', variant: BV.ghost, onTap: () => widget.go(Screen.login, root: true)),
+        FcButton('Cancel and return to sign in',
+            variant: BV.ghost,
+            onTap: () => widget.go(Screen.login, root: true)),
       ]),
     );
   }
@@ -833,19 +1139,58 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
 // ===========================================================================
 // Location access
 // ===========================================================================
-class LocationAccessScreen extends StatelessWidget {
+class LocationAccessScreen extends StatefulWidget {
   final Go go;
   const LocationAccessScreen({super.key, required this.go});
 
+  @override
+  State<LocationAccessScreen> createState() => _LocationAccessScreenState();
+}
+
+class _LocationAccessScreenState extends State<LocationAccessScreen> {
+  bool _busy = false;
+
+  /// Real OS permission + one GPS fix, then straight into the app.
+  Future<void> _allow() async {
+    setState(() => _busy = true);
+    final fix = await location.current();
+    if (!mounted) return;
+    setState(() => _busy = false);
+    app.locationOn = true;
+    if (fix != null) {
+      app.setGeo(fix.lat, fix.lng, label: fix.label);
+      app.setDeliveryPoint(fix.lat, fix.lng, address: fix.label);
+    } else if (location.status != GeoStatus.granted) {
+      toast(
+          context, 'Location is off. You can still enter an address manually.');
+    }
+    widget.go(Screen.home, root: true);
+  }
+
   Widget _map(BuildContext context) {
+    final pin = app.geoPoint ?? MapConfig.kampala;
     return Stack(fit: StackFit.expand, children: [
-      const MapGrid(bg: Color(0xFF121619), step: 30),
+      LiveMap(
+        center: pin,
+        destination: app.geoPoint,
+        myLocation: app.locationOn,
+        interactive: false,
+        showRecenter: false,
+        showRoute: false,
+        previewLabel: false,
+        radius: 0,
+      ),
       LayoutBuilder(builder: (c, cons) {
         final cx = cons.maxWidth / 2, cy = cons.maxHeight * .47;
         Widget ring(double d) => Positioned(
               left: cx - d / 2,
               top: cy - d / 2,
-              child: Container(width: d, height: d, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: al(FC.gold, .18)))),
+              child: Container(
+                  width: d,
+                  height: d,
+                  decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: al(FC.gold, .18)))),
             );
         return Stack(children: [
           ring(310),
@@ -861,16 +1206,34 @@ class LocationAccessScreen extends StatelessWidget {
                 color: FC.gold,
                 boxShadow: [
                   BoxShadow(color: al(FC.gold, .1), spreadRadius: 12),
-                  BoxShadow(color: al(Colors.black, .35), blurRadius: 45, offset: const Offset(0, 18)),
+                  BoxShadow(
+                      color: al(Colors.black, .35),
+                      blurRadius: 45,
+                      offset: const Offset(0, 18)),
                 ],
               ),
-              child: Center(child: Ic(IconName.location, size: 30, color: FC.onGold)),
+              child: Center(
+                  child: Ic(IconName.location, size: 30, color: FC.onGold)),
             ),
           ),
         ]);
       }),
       DecoratedBox(
-        decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00080A0C), FC.black], stops: [.3, 1])),
+        decoration: BoxDecoration(
+            gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0x00080A0C), FC.black],
+                stops: [.3, 1])),
+      ),
+      // Location is optional, so it always has a way back to the previous step.
+      // Kept last in the stack so the rings and shade can't swallow the tap.
+      Positioned(
+        top: topInset(context) + 12,
+        left: 16,
+        child: FcButton.icon(IconName.arrow,
+            key: const ValueKey('page-back'),
+            onTap: () => app.backOr(Screen.onboarding)),
       ),
     ]);
   }
@@ -880,31 +1243,37 @@ class LocationAccessScreen extends StatelessWidget {
     Widget point(IconName i, String t) => Row(children: [
           Ic(i, size: 20, color: FC.gold),
           const SizedBox(width: 12),
-          Expanded(child: Text(t, style: fs(11.52, color: const Color(0xFFC7C9CB)))),
+          Expanded(
+              child: Text(t, style: fs(11.52, color: const Color(0xFFC7C9CB)))),
         ]);
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 560),
         child: Padding(
           padding: EdgeInsets.fromLTRB(pad, 12, pad, 38 + bottomInset(context)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: gapped([
-            FcText('PRECISE & SECURE', kind: Tx.label, color: FC.gold),
-            const FcText('Enable your location', kind: Tx.title),
-            FcText('We use your location to show nearby partner stations, accurate delivery fees, and live driver tracking.', color: FC.muted),
-            Column(children: gapped([
-              point(IconName.fuel, 'Nearby verified stations'),
-              point(IconName.truck, 'Accurate arrival estimates'),
-              point(IconName.shield, 'Used only while ordering'),
-            ], 12)),
-            FcButton('Allow location access', onTap: () {
-              app.locationOn = true;
-              go(Screen.home, root: true);
-            }),
-            FcButton('Enter address manually', variant: BV.ghost, onTap: () async {
-              final ok = await showLocationSheet(context);
-              if (ok == true) go(Screen.home, root: true);
-            }),
-          ], 16)),
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: gapped([
+                FcText('PRECISE & SECURE', kind: Tx.label, color: FC.gold),
+                const FcText('Enable your location', kind: Tx.title),
+                FcText(
+                    'We use your location to show nearby partner stations, accurate delivery fees, and live driver tracking.',
+                    color: FC.muted),
+                Column(
+                    children: gapped([
+                  point(IconName.fuel, 'Nearby verified stations'),
+                  point(IconName.truck, 'Accurate arrival estimates'),
+                  point(IconName.shield, 'Used only while ordering'),
+                ], 12)),
+                FcButton('Allow location access',
+                    loading: _busy, onTap: _allow),
+                FcButton('Enter address manually', variant: BV.ghost,
+                    onTap: () async {
+                  final ok = await showLocationSheet(context);
+                  if (ok == true) widget.go(Screen.home, root: true);
+                }),
+              ], 16)),
         ),
       ),
     );
@@ -917,15 +1286,20 @@ class LocationAccessScreen extends StatelessWidget {
         color: FC.black,
         child: Row(children: [
           Expanded(flex: 55, child: _map(context)),
-          Expanded(flex: 45, child: Center(child: SingleChildScrollView(child: _section(context)))),
+          Expanded(
+              flex: 45,
+              child: Center(
+                  child: SingleChildScrollView(child: _section(context)))),
         ]),
       );
     }
     return ColoredBox(
       color: FC.black,
       child: SingleChildScrollView(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          SizedBox(height: math.max(300, vh(context) * .42), child: _map(context)),
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          SizedBox(
+              height: math.max(300, vh(context) * .42), child: _map(context)),
           _section(context),
         ]),
       ),

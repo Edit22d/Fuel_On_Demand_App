@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'map_style.dart';
 
 /// One delivery request offered to a rider.
 class RiderJob {
   final String id, station, pickupArea, dropArea, dropAddress;
   final String customer, customerRating, product, vehicle, plate;
+  final String customerPhone;
   final int litres, pay, minutes;
   final double pickupKm, tripKm;
+  /// Forecourt + customer coordinates, used by the rider navigation map.
+  final LatLng pickup, drop;
   const RiderJob({
     required this.id,
     required this.station,
@@ -14,6 +18,7 @@ class RiderJob {
     required this.dropAddress,
     required this.customer,
     required this.customerRating,
+    this.customerPhone = '',
     required this.product,
     required this.vehicle,
     required this.plate,
@@ -22,6 +27,8 @@ class RiderJob {
     required this.minutes,
     required this.pickupKm,
     required this.tripKm,
+    this.pickup = MapConfig.kampala,
+    this.drop = MapConfig.kampala,
   });
 
   double get totalKm => pickupKm + tripKm;
@@ -63,20 +70,26 @@ class RiderState extends ChangeNotifier {
     RiderJob(
       id: 'FC-29841', station: 'Stabex Kira Road', pickupArea: 'Kira Road', dropArea: 'Kisementi',
       dropAddress: 'Acacia Mall, Kisementi', customer: 'Joel Kato', customerRating: '4.9',
+      customerPhone: '+256772123456',
       product: 'Premium petrol', vehicle: 'Black Toyota RAV4', plate: 'UBP 482M',
       litres: 35, pay: 18500, minutes: 22, pickupKm: 1.8, tripKm: 4.6,
+      pickup: LatLng(0.3392, 32.5931), drop: LatLng(0.3432, 32.5886),
     ),
     RiderJob(
       id: 'FC-29850', station: 'Shell Lugogo', pickupArea: 'Lugogo', dropArea: 'Naguru',
       dropAddress: 'Naguru Hill Road, Naguru', customer: 'Aisha Nabirye', customerRating: '4.8',
+      customerPhone: '+256772987654',
       product: 'Ultra diesel', vehicle: 'Silver Toyota Hilux', plate: 'UBN 117Q',
       litres: 28, pay: 16000, minutes: 18, pickupKm: 3.2, tripKm: 3.1,
+      pickup: LatLng(0.3416, 32.6015), drop: LatLng(0.3450, 32.6075),
     ),
     RiderJob(
       id: 'FC-29853', station: 'Rubis Bukoto', pickupArea: 'Bukoto', dropArea: 'Ntinda',
       dropAddress: 'Ntinda Shopping Centre, Ntinda', customer: 'David Ssemwogerere', customerRating: '4.7',
+      customerPhone: '+256701445566',
       product: 'Premium petrol', vehicle: 'White Honda CR-V', plate: 'UBR 905T',
       litres: 22, pay: 21500, minutes: 26, pickupKm: 4.1, tripKm: 5.8,
+      pickup: LatLng(0.3479, 32.6015), drop: LatLng(0.3530, 32.6106),
     ),
   ];
 

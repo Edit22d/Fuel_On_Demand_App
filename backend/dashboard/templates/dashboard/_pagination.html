@@ -1,0 +1,23 @@
+{% if page.paginator.num_pages > 1 %}
+<div class="pagination">
+  <span>
+    Page {{ page.number }} of {{ page.paginator.num_pages }}
+    · {{ page.paginator.count }} record{{ page.paginator.count|pluralize }}
+  </span>
+  <div class="pages">
+    {% if page.has_previous %}
+      <a class="page-btn" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.previous_page_number }}" aria-label="Previous">←</a>
+    {% endif %}
+    {% for num in page.paginator.page_range %}
+      {% if num == page.number %}
+        <span class="page-btn on">{{ num }}</span>
+      {% elif num > page.number|add:"-3" and num < page.number|add:"3" %}
+        <a class="page-btn" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ num }}">{{ num }}</a>
+      {% endif %}
+    {% endfor %}
+    {% if page.has_next %}
+      <a class="page-btn" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page.next_page_number }}" aria-label="Next">→</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}

@@ -1,4 +1,5 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -10,18 +11,18 @@ import 'package:google_fonts/google_fonts.dart';
 /// the LEFT-pointing "arrow" icon, and the "Total" row in price summaries picks
 /// up the TotalEnergies red-to-blue gradient (a `.total` class collision).
 /// `true` reproduces the design exactly as exported. Set `false` to fix both.
-const bool kReproduceSourceQuirks = true;
+const bool kReproduceSourceQuirks = false;
 
-/// No SMS gateway yet: when true, the verification code is shown in a toast.
-/// Turn off once the backend sends real codes.
-const bool kDemoMode = true;
+/// Until the backend sends SMS codes the verification code is surfaced in the
+/// UI. Only ever true in debug builds — release builds must rely on the API.
+const bool kShowDevOtp = kDebugMode;
 
 /// Verification code length and charset.
 const int kOtpLength = 6;
 const bool kOtpAlphanumeric = false;
 
-/// Right-hand space reserved for the floating menu icon (top-right corner).
-const double kRightInset = 64;
+/// Right-hand space reserved inside headers (safe area for wide layouts).
+const double kRightInset = 20;
 
 /// App colours. Every name now returns the dark or the light value depending
 /// on [dark], which AppState.setDarkMode() flips. Because the values change at

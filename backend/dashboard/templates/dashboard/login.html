@@ -1,0 +1,73 @@
+﻿{% load static fc %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#080A0C">
+  <title>Sign in - FuelOnDemand Operations</title>
+  <link rel="icon" href="{% static 'dashboard/img/favicon.png' %}">
+  <link rel="stylesheet" href="{% static 'dashboard/css/console.css' %}">
+  <link rel="stylesheet" href="{% static 'dashboard/css/pages.css' %}">
+</head>
+<body class="auth-body">
+
+<header class="auth-top">
+  <span class="auth-brand">
+    <span class="auth-brand-logo"><img src="{% static 'dashboard/img/logo.png' %}" alt="FuelOnDemand"></span>
+    <span class="auth-brand-text">
+      <b>FuelOnDemand</b>
+      <span>Operations console</span>
+    </span>
+  </span>
+  <a class="auth-status" href="{% url 'health' %}" target="_blank" rel="noopener">
+    <i></i> All systems live
+  </a>
+</header>
+
+<main class="auth-main">
+  <section class="auth-card">
+    <div class="auth-logo"><img src="{% static 'dashboard/img/logo.png' %}" alt="FuelOnDemand"></div>
+
+    <h1 class="auth-title">Welcome back</h1>
+    <p class="auth-sub">Sign in to your operations dashboard</p>
+
+    {% if error %}
+      <div class="login-error auth-alert" role="alert">{% icon "alert" 16 %}<span>{{ error }}</span></div>
+    {% endif %}
+
+    <form class="auth-form" method="post" action="{% url 'console:login' %}" autocomplete="off">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+
+      <div class="auth-field">
+        <label class="auth-label" for="identifier">Email or phone number</label>
+        <div class="auth-input">
+          <span class="auth-icon">{% icon "user" 16 %}</span>
+          <input class="input" id="identifier" name="identifier" value="{{ identifier }}"
+                 placeholder="you@fuelondemand.co.ug" required autofocus>
+        </div>
+      </div>
+
+      <div class="auth-field">
+        <label class="auth-label" for="password">Password</label>
+        <div class="auth-input">
+          <span class="auth-icon">{% icon "shield" 16 %}</span>
+          <input class="input" id="password" name="password" type="password"
+                 placeholder="Enter your password" required>
+          <button class="pass-toggle auth-eye" type="button" data-password-toggle="password" aria-label="Show password">
+            {% icon "eye" 16 %}
+          </button>
+        </div>
+      </div>
+
+      <button class="btn btn-gold btn-block auth-submit" type="submit">
+        Sign in {% icon "arrow" 16 %}
+      </button>
+    </form>
+  </section>
+</main>
+
+<script src="{% static 'dashboard/js/console.js' %}"></script>
+</body>
+</html>

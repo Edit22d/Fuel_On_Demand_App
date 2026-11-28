@@ -1,0 +1,1 @@
+Run with `flutter run` from `flutter_app/`; web builds can be served locally via the bundled `serve_web.js`. Android requires Gradle wrapper (already vendored); iOS requires Xcode workspace under `ios/Runner.xcworkspace`.

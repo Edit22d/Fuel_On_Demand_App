@@ -2,7 +2,120 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../core/core.dart';
 import '../services/auth_service.dart';
+import '../services/fuel_prices.dart'; // <- new file
 import 'sheets.dart';
+
+// ===========================================================================
+// Shared widgets: real logo + live station card
+// ===========================================================================
+class StationLogo extends StatelessWidget {
+  final LiveStation s;
+  final double size;
+  const StationLogo(this.s, {super.key, this.size = 48});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: size,
+        height: size,
+        padding: EdgeInsets.all(size * .12),
+        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(size * .26), border: Border.all(color: FC.line)),
+        child: Image.asset(
+          s.logoAsset,
+          fit: BoxFit.contain,
+          // Falls back to a letter if the logo file is missing.
+          errorBuilder: (_, __, ___) => Center(child: Text(s.brand[0], style: fs(size * .4, color: FC.onGold, w: FontWeight.w800))),
+        ),
+      );
+}
+
+String _pill(String id, FuelType f) {
+  final p = livePrices.changePct(id, f);
+  if (p.abs() < .05) return 'Stable';
+  return '${p > 0 ? '+' : '−'}${p.abs().toStringAsFixed(1)}%';
+}
+
+class _PriceCell extends StatelessWidget {
+  final String id, label;
+  final FuelType fuel;
+  const _PriceCell(this.id, this.label, this.fuel);
+
+  @override
+  Widget build(BuildContext context) {
+    final move = livePrices.lastMove(id, fuel);
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(color: FC.surface2, borderRadius: BorderRadius.circular(12), border: Border.all(color: FC.line)),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          FcText(label, kind: Tx.caption, color: FC.muted),
+          const SizedBox(height: 4),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 350),
+            child: FcText('${ugx(livePrices.price(id, fuel))}/L', key: ValueKey(livePrices.price(id, fuel)), kind: Tx.subtitle, color: FC.gold),
+          ),
+          const SizedBox(height: 4),
+          Row(children: [
+            Icon(move > 0 ? Icons.arrow_upward : move < 0 ? Icons.arrow_downward : Icons.remove, size: 12, color: FC.muted),
+            const SizedBox(width: 4),
+            FcText(_pill(id, fuel), kind: Tx.caption, color: FC.muted),
+          ]),
+        ]),
+      ),
+    );
+  }
+}
+
+/// Card for a station with both live prices. Rebuilds whenever prices move.
+class LiveStationCard extends StatelessWidget {
+  final LiveStation s;
+  final VoidCallback onTap;
+  const LiveStationCard(this.s, {super.key, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: livePrices,
+        builder: (_, __) => Tap(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: FC.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: FC.line)),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                StationLogo(s, size: 48),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    FcText(s.name, kind: Tx.subtitle, maxLines: 1),
+                    FcText('${s.km} km · ${s.etaMin}–${s.etaMax} min · ★ ${s.rating}', kind: Tx.caption, color: FC.muted),
+                  ]),
+                ),
+                const LivePill('Live'),
+              ]),
+              const SizedBox(height: 14),
+              Row(children: [
+                _PriceCell(s.id, 'Petrol', FuelType.petrol),
+                const SizedBox(width: 10),
+                _PriceCell(s.id, 'Diesel', FuelType.diesel),
+              ]),
+            ]),
+          ),
+        ),
+      );
+}
+
+List<LiveStation> _stations(String query) {
+  final q = query.trim().toLowerCase();
+  if (q.isEmpty) return kLiveStations;
+  return kLiveStations.where((s) {
+    final hay = '${s.name} ${s.brand} petrol diesel'.toLowerCase();
+    return q.split(RegExp(r'\s+')).every(hay.contains);
+  }).toList();
+}
+
+void _open(Go go, LiveStation s) {
+  livePrices.selectedId = s.id;
+  go(Screen.station);
+}
 
 // ===========================================================================
 // Home
@@ -22,15 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _q.dispose();
     super.dispose();
-  }
-
-  List<Station> get _results {
-    final q = _query.trim().toLowerCase();
-    if (q.isEmpty) return kStations;
-    return kStations.where((s) {
-      final hay = '${s.name} ${s.brand} petrol diesel'.toLowerCase();
-      return q.split(RegExp(r'\s+')).every(hay.contains);
-    }).toList();
   }
 
   Widget _quick(BuildContext context, IconName icon, String label, Widget value, String pill) => Container(
@@ -56,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final wide = isWide(context);
     final pad = cl(context, 20, 5, 70);
-    final results = _results;
+    final results = _stations(_query);
     final hero = ConstrainedBox(
       constraints: BoxConstraints(minHeight: wide ? 485 : 395),
       child: Stack(children: [
@@ -68,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-        const Positioned.fill(
+        Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x00080A0C), FC.black], stops: [.55, 1])),
           ),
@@ -78,7 +182,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const FcText('Good evening,', kind: Tx.caption, color: FC.muted),
+                FcText('Good evening,', kind: Tx.caption, color: FC.muted),
                 FcText(auth.profile.name, kind: Tx.subtitle),
               ]),
               Tap(
@@ -102,11 +206,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(color: const Color(0xB8080A0C), borderRadius: BorderRadius.circular(20), border: Border.all(color: al(Colors.white, .1))),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Ic(IconName.location, size: 16, color: FC.gold),
+                  Ic(IconName.location, size: 16, color: FC.gold),
                   const SizedBox(width: 8),
                   Text(app.location, style: fs(10.56)),
                   const SizedBox(width: 8),
-                  const Ic(IconName.chevron, size: 15, color: FC.muted),
+                  Ic(IconName.chevron, size: 15, color: FC.muted),
                 ]),
               ),
             ),
@@ -114,11 +218,11 @@ class _HomeScreenState extends State<HomeScreen> {
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 570),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: gapped([
-                const FcText('FUEL ON YOUR SCHEDULE', kind: Tx.label, color: FC.gold),
+                FcText('FUEL ON YOUR SCHEDULE', kind: Tx.label, color: FC.gold),
                 const FcText('Running low?\nWe’re already close.', kind: Tx.display),
-                const FcText('Genuine fuel from trusted stations, delivered safely to you.', color: FC.muted),
+                FcText('Genuine fuel from Stabex and Shell, delivered safely to you.', color: FC.muted),
                 const SizedBox(height: 0),
-                FcButton('Order fuel now', expand: false, trailingIcon: IconName.arrow, onTap: () => widget.go(Screen.station)),
+                FcButton('Order fuel now', expand: false, trailingIcon: IconName.arrow, onTap: () => _open(widget.go, kLiveStations.first)),
               ], 13)),
             ),
           ]),
@@ -128,9 +232,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final quick = LayoutBuilder(builder: (c, cons) {
       final one = vw(context) <= 380;
-      final a = _quick(context, IconName.fuel, 'Petrol average',
-          Text.rich(TextSpan(style: ts(context, Tx.subtitle), children: [const TextSpan(text: 'UGX 5,180 '), TextSpan(text: '/L', style: fs(10.4, color: FC.muted))])), '−2.4%');
-      final b = _quick(context, IconName.clock, 'Avg. arrival', Text.rich(TextSpan(style: ts(context, Tx.subtitle), children: [const TextSpan(text: '22 '), TextSpan(text: 'min', style: fs(10.4, color: FC.muted))])), 'Live');
+      final a = AnimatedBuilder(
+        animation: livePrices,
+        builder: (_, __) {
+          final avg = livePrices.petrolAverage;
+          final base = kLiveStations.map((s) => s.basePrice[FuelType.petrol]!).reduce((a, b) => a + b) / kLiveStations.length;
+          final p = (avg - base) / base * 100;
+          return _quick(
+            context,
+            IconName.fuel,
+            'Petrol average',
+            Text.rich(TextSpan(style: ts(context, Tx.subtitle), children: [TextSpan(text: '${ugx(avg)} '), TextSpan(text: '/L', style: fs(10.4, color: FC.muted))])),
+            p.abs() < .05 ? 'Stable' : '${p > 0 ? '+' : '−'}${p.abs().toStringAsFixed(1)}%',
+          );
+        },
+      );
+      final avgEta = kLiveStations.map((s) => (s.etaMin + s.etaMax) / 2).reduce((a, b) => a + b) / kLiveStations.length;
+      final b = _quick(context, IconName.clock, 'Avg. arrival', Text.rich(TextSpan(style: ts(context, Tx.subtitle), children: [TextSpan(text: '${avgEta.round()} '), TextSpan(text: 'min', style: fs(10.4, color: FC.muted))])), 'Live');
       if (one) return Column(children: [a, const SizedBox(height: 12), b]);
       return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [Expanded(child: a), const SizedBox(width: 12), Expanded(child: b)]);
     });
@@ -140,7 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
         : LayoutBuilder(builder: (c, cons) {
             final cols = wide ? 2 : 1;
             final w = (cons.maxWidth - 14 * (cols - 1)) / cols;
-            return Wrap(spacing: 14, runSpacing: 14, children: [for (final s in results) SizedBox(width: w, child: StationCard(s, onTap: () => widget.go(Screen.station)))]);
+            return Wrap(spacing: 14, runSpacing: 14, children: [for (final s in results) SizedBox(width: w, child: LiveStationCard(s, onTap: () => _open(widget.go, s)))]);
           });
 
     return AppPage(
@@ -150,18 +268,11 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         hero,
         ContentSection(children: [
-          SearchBox(hint: 'Search stations or fuel type', controller: _q, onChanged: (v) => setState(() => _query = v)),
+          SearchBox(hint: 'Search Stabex, Shell or fuel type', controller: _q, onChanged: (v) => setState(() => _query = v)),
           const SizedBox(height: 22),
           quick,
           const SizedBox(height: 8),
-          SectionHeading('Nearby stations', caption: 'Verified partners near you', trailing: TextAction('See all', onTap: () => widget.go(Screen.partners))),
-          SizedBox(
-            height: 81,
-            child: ListView(scrollDirection: Axis.horizontal, children: [
-              for (final p in kPartners) Padding(padding: const EdgeInsets.only(right: 9, bottom: 15), child: PartnerChip(p, onTap: () => widget.go(Screen.partners))),
-            ]),
-          ),
-          const SizedBox(height: 8),
+          const SectionHeading('Our stations', caption: 'Live prices · update as orders come in'),
           list,
         ]),
       ]),
@@ -183,7 +294,7 @@ class _PartnersScreenState extends State<PartnersScreen> {
   final _q = TextEditingController();
   String _query = '';
   String _filter = 'All';
-  static const _filters = ['All', 'Nearest', 'Best price', 'Open now'];
+  static const _filters = ['All', 'Nearest', 'Best price'];
 
   @override
   void dispose() {
@@ -191,16 +302,16 @@ class _PartnersScreenState extends State<PartnersScreen> {
     super.dispose();
   }
 
-  List<Station> get _results {
-    var l = kStations.where((s) => _query.trim().isEmpty || '${s.name} ${s.brand}'.toLowerCase().contains(_query.trim().toLowerCase())).toList();
+  List<LiveStation> get _results {
+    final l = _stations(_query).toList();
     if (_filter == 'Nearest') l.sort((a, b) => a.km.compareTo(b.km));
+    if (_filter == 'Best price') l.sort((a, b) => livePrices.price(a.id, FuelType.petrol).compareTo(livePrices.price(b.id, FuelType.petrol)));
     return l;
   }
 
   @override
   Widget build(BuildContext context) {
     final wide = isWide(context);
-    final results = _results;
     return AppPage(
       nav: true,
       navCurrent: Screen.partners,
@@ -208,14 +319,14 @@ class _PartnersScreenState extends State<PartnersScreen> {
       header: PageHeader(title: 'Partner stations', goBack: () => app.backOr(Screen.home), action: RoundAction(IconName.profile, onTap: () => widget.go(Screen.profile))),
       body: ContentSection(maxWide: 2000, children: [
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const FcText('VERIFIED NETWORK', kind: Tx.label, color: FC.gold),
+          FcText('VERIFIED NETWORK', kind: Tx.label, color: FC.gold),
           const SizedBox(height: 8),
           ConstrainedBox(constraints: const BoxConstraints(maxWidth: 620), child: const FcText('Choose a station you trust.', kind: Tx.title)),
           const SizedBox(height: 8),
-          ConstrainedBox(constraints: const BoxConstraints(maxWidth: 620), child: const FcText('Compare live prices, delivery times, and verified product availability across Kampala.', color: FC.muted)),
+          ConstrainedBox(constraints: const BoxConstraints(maxWidth: 620), child: FcText('Compare live prices and delivery times across Kampala.', color: FC.muted)),
         ]),
         const SizedBox(height: 18),
-        SearchBox(hint: 'Search by station, area or fuel', controller: _q, onChanged: (v) => setState(() => _query = v)),
+        SearchBox(hint: 'Search by station or fuel', controller: _q, onChanged: (v) => setState(() => _query = v)),
         const SizedBox(height: 18),
         SizedBox(
           height: 34,
@@ -239,46 +350,18 @@ class _PartnersScreenState extends State<PartnersScreen> {
               ),
           ]),
         ),
-        const SizedBox(height: 18),
-        LayoutBuilder(builder: (c, cons) {
-          final cols = wide ? 3 : 2;
-          final w = (cons.maxWidth - 10 * (cols - 1)) / cols;
-          return Wrap(spacing: 10, runSpacing: 10, children: [
-            for (var i = 0; i < kPartners.length; i++)
-              SizedBox(
-                width: w,
-                child: Tap(
-                  onTap: () => widget.go(Screen.station),
-                  child: Container(
-                    constraints: const BoxConstraints(minHeight: 86),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(color: FC.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: FC.line)),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Row(children: [
-                        PartnerMonogram(kPartners[i]),
-                        const SizedBox(width: 11),
-                        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          FcText(kPartners[i].name, kind: Tx.subtitle, maxLines: 1),
-                          FcText('${i + 3} stations nearby', kind: Tx.caption, color: FC.muted),
-                        ])),
-                      ]),
-                      const SizedBox(height: 3),
-                      const Padding(padding: EdgeInsets.only(left: 55), child: VerifiedPill('Partner', check: true)),
-                    ]),
-                  ),
-                ),
-              ),
-          ]);
-        }),
-        const SectionHeading('Available near you', caption: 'Sorted by fastest delivery'),
-        if (results.isEmpty)
-          const Padding(padding: EdgeInsets.symmetric(vertical: 24), child: FcText('No stations match your search.', color: FC.muted, align: TextAlign.center))
-        else
-          LayoutBuilder(builder: (c, cons) {
+        const SectionHeading('Available near you', caption: 'Prices update live as orders are placed'),
+        Builder(builder: (_) {
+          final results = _results;
+          if (results.isEmpty) {
+            return const Padding(padding: EdgeInsets.symmetric(vertical: 24), child: FcText('No stations match your search.', color: FC.muted, align: TextAlign.center));
+          }
+          return LayoutBuilder(builder: (c, cons) {
             final cols = wide ? 2 : 1;
             final w = (cons.maxWidth - 14 * (cols - 1)) / cols;
-            return Wrap(spacing: 14, runSpacing: 14, children: [for (final s in results) SizedBox(width: w, child: StationCard(s, onTap: () => widget.go(Screen.station)))]);
-          }),
+            return Wrap(spacing: 14, runSpacing: 14, children: [for (final s in results) SizedBox(width: w, child: LiveStationCard(s, onTap: () => _open(widget.go, s)))]);
+          });
+        }),
       ]),
     );
   }
@@ -297,7 +380,7 @@ class StationScreen extends StatefulWidget {
 class _StationScreenState extends State<StationScreen> {
   Widget _stat(IconName icon, String value, String label, {bool last = false}) => Expanded(
         child: Container(
-          decoration: BoxDecoration(border: last ? null : const Border(right: BorderSide(color: FC.line))),
+          decoration: BoxDecoration(border: last ? null : Border(right: BorderSide(color: FC.line))),
           child: Column(children: [
             Ic(icon, color: FC.gold),
             const SizedBox(height: 4),
@@ -308,23 +391,36 @@ class _StationScreenState extends State<StationScreen> {
         ),
       );
 
-  Widget _product(String name, String sub, String price, IconName icon) => Container(
+  Widget _product(LiveStation s, String name, String sub, FuelType f) => Container(
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(color: FC.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: FC.line)),
         child: Row(children: [
-          IconBox(icon),
+          IconBox(IconName.fuel),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText(name, kind: Tx.subtitle), FcText(sub, kind: Tx.caption, color: FC.muted)])),
-          FcText(price, kind: Tx.subtitle, color: FC.gold),
+          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              child: FcText('${ugx(livePrices.price(s.id, f))}/L', key: ValueKey(livePrices.price(s.id, f)), kind: Tx.subtitle, color: FC.gold),
+            ),
+            FcText(_pill(s.id, f), kind: Tx.caption, color: FC.muted),
+          ]),
         ]),
       );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => AnimatedBuilder(animation: livePrices, builder: (_, __) => _page(context));
+
+  Widget _page(BuildContext context) {
+    final s = livePrices.selected;
     final wide = isWide(context);
     final coverH = math.max(360.0, vh(context) * (wide ? .58 : .47));
     final pad = cl(context, 18, 5, 50);
     final tpad = cl(context, 20, 6, 70);
+
+    // "Best price nearby" goes to whichever station has the lower petrol price right now.
+    final cheapest = kLiveStations.reduce((a, b) => livePrices.price(a.id, FuelType.petrol) <= livePrices.price(b.id, FuelType.petrol) ? a : b);
+
     final cover = SizedBox(
       height: coverH,
       child: Stack(fit: StackFit.expand, children: [
@@ -359,13 +455,17 @@ class _StationScreenState extends State<StationScreen> {
           right: tpad,
           bottom: 26,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const VerifiedPill('Verified partner', check: true, iconSize: 14),
+            Row(children: [
+              StationLogo(s, size: 54),
+              const SizedBox(width: 12),
+              const VerifiedPill('Verified partner', check: true, iconSize: 14),
+            ]),
+            const SizedBox(height: 10),
+            FcText(s.brand.toUpperCase(), kind: Tx.label, color: FC.gold),
             const SizedBox(height: 8),
-            const FcText('STABEX', kind: Tx.label, color: FC.gold),
+            FcText(s.name, kind: Tx.display),
             const SizedBox(height: 8),
-            const FcText('Stabex Kira Road', kind: Tx.display),
-            const SizedBox(height: 8),
-            const FcText('Kira Road, Kampala · Open 24 hours', kind: Tx.caption, color: FC.muted),
+            FcText(s.address, kind: Tx.caption, color: FC.muted),
           ]),
         ),
       ]),
@@ -382,17 +482,17 @@ class _StationScreenState extends State<StationScreen> {
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 Container(
                   padding: const EdgeInsets.fromLTRB(0, 18, 0, 24),
-                  decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: FC.line))),
+                  decoration: BoxDecoration(border: Border(bottom: BorderSide(color: FC.line))),
                   child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    _stat(IconName.star, '4.9', '320 reviews'),
-                    _stat(IconName.location, '1.8 km', 'Distance'),
-                    _stat(IconName.clock, '18–24', 'Minutes', last: true),
+                    _stat(IconName.star, '${s.rating}', '${s.reviews} reviews'),
+                    _stat(IconName.location, '${s.km} km', 'Distance'),
+                    _stat(IconName.clock, '${s.etaMin}–${s.etaMax}', 'Minutes', last: true),
                   ]),
                 ),
-                SectionHeading('Available products', trailing: const VerifiedPill('Best price nearby')),
-                _product('Premium Petrol', '95 octane · cleaner performance', 'UGX 5,180/L', IconName.fuel),
+                SectionHeading('Live prices', trailing: cheapest.id == s.id ? const VerifiedPill('Best price nearby') : const LivePill('Live')),
+                _product(s, 'Premium Petrol', '95 octane · cleaner performance', FuelType.petrol),
                 const SizedBox(height: 10),
-                _product('Ultra Diesel', 'High efficiency · low sulphur', 'UGX 4,960/L', IconName.fuel),
+                _product(s, 'Ultra Diesel', 'High efficiency · low sulphur', FuelType.diesel),
                 const SizedBox(height: 22),
                 FcButton('Choose fuel', trailingIcon: IconName.arrow, onTap: () => widget.go(Screen.fuel)),
               ]),

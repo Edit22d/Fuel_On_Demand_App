@@ -1,0 +1,104 @@
+{% extends "dashboard/base.html" %}
+{% load static fc %}
+{% block title %}Money · FuelOnDemand{% endblock %}
+
+{% block content %}
+<div class="page-head-row">
+  <div>
+    <div class="eyebrow">Business</div>
+    <h2 class="page-title-lg">Money</h2>
+    <p class="page-sub">A single signed ledger for payments, top-ups, refunds, rider pay and platform commission.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-ghost" href="{% url 'console:payments_export' %}">{% icon "download" 16 %} Export CSV</a>
+    <a class="btn btn-gold" href="{% url 'console:orders' %}?status=delivered">{% icon "check" 16 %} Delivered orders</a>
+  </div>
+</div>
+
+<div class="grid cols-4 mb-16">
+  <div class="stat-tile"><div class="k">Inflow</div><div class="v green">{{ inflow|short }}</div></div>
+  <div class="stat-tile"><div class="k">Outflow</div><div class="v">{{ outflow|short }}</div></div>
+  <div class="stat-tile"><div class="k">Net</div><div class="v gold">{{ net|short }}</div></div>
+  <div class="stat-tile"><div class="k">Entries</div><div class="v">{{ count }}</div></div>
+</div>
+
+<section class="card mb-16">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">Where the money moves</h2>
+      <div class="card-sub">Signed totals by entry type for the current filter</div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="bars">
+      {% for row in by_kind %}
+      <div class="bar-row">
+        <span class="bar-label">{{ row.kind|capfirst }}</span>
+        <span class="bar-value">{{ row.total|money }} · {{ row.n }} entries</span>
+        <div class="bar-track"><div class="bar-fill{% if row.kind == 'refund' %} violet{% elif row.kind == 'earning' %} teal{% elif row.kind == 'payout' %} blue{% endif %}" style="width:{{ row.total|pct:net }}%"></div></div>
+      </div>
+      {% empty %}
+      <div class="empty">No ledger entries for this view.</div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<form class="filters" method="get" action="{% url 'console:payments' %}">
+  <div class="search" style="position:relative">
+    {% icon "search" %}
+    <input name="q" value="{{ filters.q }}" placeholder="Reference, person or note" aria-label="Search ledger">
+  </div>
+  <select class="select" name="kind" aria-label="Entry type">
+    <option value="">Every type</option>
+    {% for value, label in kinds %}
+      <option value="{{ value }}" {% if filters.kind == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select class="select" name="status" aria-label="Status">
+    <option value="">Any status</option>
+    {% for value, label in statuses %}
+      <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button class="btn btn-gold btn-sm" type="submit">{% icon "filter" 14 %} Apply</button>
+  <a class="btn btn-ghost btn-sm" href="{% url 'console:payments' %}">Reset</a>
+</form>
+
+<section class="card">
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>Reference</th><th>User</th><th>Type</th><th>Method</th><th>Order</th><th>Status</th><th class="num">Amount</th><th>When</th></tr>
+      </thead>
+      <tbody>
+        {% for tx in page %}
+        <tr>
+          <td class="mono small">{{ tx.reference }}</td>
+          <td>
+            <div class="cell-user">
+              <span class="avatar">{{ tx.user.initials }}</span>
+              <div>
+                <div class="name">{{ tx.user.name }}</div>
+                <div class="sub mono">{{ tx.user.phone }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="small">{{ tx.get_kind_display }}</td>
+          <td class="small">{{ tx.get_method_display|default:"—" }}</td>
+          <td class="small mono">
+            {% if tx.order %}<a href="{% url 'console:order_detail' tx.order.pk %}">{{ tx.order.number }}</a>{% else %}—{% endif %}
+          </td>
+          <td><span class="chip plain {{ tx.status|status_tone }}">{{ tx.get_status_display }}</span></td>
+          <td class="num amount {% if tx.amount > 0 %}pos{% else %}neg{% endif %}">{{ tx.amount|signed }}</td>
+          <td class="small dim nowrap">{{ tx.created_at|daystamp }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8"><div class="empty">No ledger entries match this view.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "dashboard/_pagination.html" %}
+</section>
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends "dashboard/base.html" %}
+{% load static fc %}
+{% block title %}Live operations · FuelOnDemand{% endblock %}
+
+{% block content %}
+<div class="page-head-row">
+  <div>
+    <div class="eyebrow">Real time</div>
+    <h2 class="page-title-lg">Dispatch board</h2>
+    <p class="page-sub">Every active delivery, every rider position, refreshed every few seconds from the same API the apps use.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-ghost" href="{% url 'console:orders' %}?status=unassigned">{% icon "alert" 16 %} Unassigned</a>
+    <a class="btn btn-gold" href="{% url 'console:orders' %}">{% icon "orders" 16 %} All orders</a>
+  </div>
+</div>
+
+<div class="grid cols-4 mb-16">
+  <div class="stat-tile"><div class="k">Riders online</div><div class="v" data-pulse="online-riders">{{ online_riders }}</div></div>
+  <div class="stat-tile"><div class="k">Active deliveries</div><div class="v" data-pulse="active-orders">{{ orders|length }}</div></div>
+  <div class="stat-tile"><div class="k">Unassigned</div><div class="v">{{ unassigned }}<span class="tiny dim"> orders</span></div></div>
+  <div class="stat-tile"><div class="k">Open tickets</div><div class="v">{{ horizon.open_tickets }}</div></div>
+</div>
+
+<div class="live-grid">
+  <section class="map-card lg">
+    <div class="map-toolbar">
+      <span class="map-chip"><span class="pulse-dot"></span> Live</span>
+      <span class="map-chip"><b>{{ stations|length }}</b> stations</span>
+      <span class="map-chip"><b>{{ online_riders }}</b> online</span>
+      <span class="map-chip" style="margin-left:auto">Updated <b data-updated>just now</b></span>
+    </div>
+    <div data-map aria-label="Live operations map"></div>
+    <div class="map-legend">
+      <span><i style="background:var(--gold)"></i>Station</span>
+      <span><i style="background:var(--green)"></i>Rider</span>
+      <span><i style="background:rgba(245,199,46,.6)"></i>Delivery</span>
+      <span><i style="background:#7d838a"></i>Idle</span>
+    </div>
+  </section>
+
+  <div class="stack-16">
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Active deliveries</h2>
+          <div class="card-sub">Newest first · auto-updating</div>
+        </div>
+        <span class="tag" data-pulse="active-orders">{{ orders|length }}</span>
+      </div>
+      <div class="card-body">
+        <div class="scroll-y tall" data-live-orders>
+          {% for o in orders %}
+          <a class="tile" href="{% url 'console:order_detail' o.id %}" style="margin-bottom:10px">
+            <span class="avatar">{{ o.customer_initials }}</span>
+            <div class="tile-main">
+              <div class="tile-title">{{ o.number }}</div>
+              <div class="tile-sub">{{ o.fuel }} · {{ o.address }}</div>
+            </div>
+            <div class="stack" style="align-items:flex-end">
+              <span class="chip {{ o.status|status_tone }}">{{ o.status_label }}</span>
+              <span class="tiny dim">{{ o.age_minutes }}m · {{ o.total|money }}</span>
+            </div>
+          </a>
+          {% empty %}
+          <div class="empty">No deliveries in progress.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Riders on the map</h2>
+          <div class="card-sub">Availability and current load</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="scroll-y">
+          {% for r in riders %}
+          <div class="rider-row">
+            <span class="avatar">{{ r.initials }}</span>
+            <div class="rmeta">
+              <div class="rname">{{ r.name }} <span class="mono tiny dim">{{ r.plate }}</span></div>
+              <div class="rsub">{{ r.vehicle }} · {{ r.deliveries }} deliveries · ★ {{ r.rating|floatformat:1 }}</div>
+            </div>
+            <div class="stack" style="align-items:flex-end;gap:3px">
+              {% if r.order %}
+                <span class="chip gold">{{ r.order_status }}</span>
+              {% elif r.online %}
+                <span class="chip ok">Available</span>
+              {% else %}
+                <span class="chip muted">Offline</span>
+              {% endif %}
+              <span class="state-line">
+                <span class="state-dot {% if r.stale %}stale{% elif not r.online %}idle{% endif %}"></span>
+                {{ r.last_seen|ago }}
+              </span>
+            </div>
+          </div>
+          {% empty %}
+          <div class="empty">No riders reporting a position yet.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<section class="card mt-16">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">Delivery pipeline</h2>
+      <div class="card-sub">Every open order with its rider and value</div>
+    </div>
+    <span class="tag">{{ orders|length }} open</span>
+  </div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr>
+          <th>Order</th><th>Customer</th><th>Station</th><th>Rider</th>
+          <th>Status</th><th class="num">ETA</th><th class="num">Value</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td><a class="cell-link" href="{% url 'console:order_detail' o.id %}">{{ o.number }}</a></td>
+          <td>
+            <div class="cell-user">
+              <span class="avatar">{{ o.customer_initials }}</span>
+              <div>
+                <div class="name">{{ o.customer }}</div>
+                <div class="sub">{{ o.address|truncatechars:38 }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="small">{{ o.station }}</td>
+          <td class="small">{{ o.rider|default:"—" }}</td>
+          <td><span class="chip {{ o.status|status_tone }}">{{ o.status_label }}</span></td>
+          <td class="num">{{ o.eta }} min</td>
+          <td class="num amount">{{ o.total|money }}</td>
+          <td class="num"><a class="card-link" href="{% url 'console:order_detail' o.id %}">Open →</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8"><div class="empty">Nothing in the pipeline right now.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script type="application/json" id="map-seed">{{ map_seed|safe }}</script>
+{% endblock %}

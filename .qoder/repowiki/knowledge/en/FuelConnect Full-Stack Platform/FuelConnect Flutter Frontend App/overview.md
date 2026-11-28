@@ -1,0 +1,1 @@
+Flutter frontend for the FuelConnect on-demand fuel delivery app, providing a single-process screen router, theme/state store, and local auth mock backed by shared_preferences.

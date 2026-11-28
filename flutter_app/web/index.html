@@ -18,19 +18,52 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="FuelOnDemand — on-demand fuel delivery in Kampala.">
+
+  <!--
+    Critical for phones: without a viewport tag mobile browsers lay the page out
+    at a desktop width (~980px) and then shrink everything, which is why the app
+    used to render as a small card in one corner of the screen.
+  -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#080A0C">
+  <style>
+    /* The Flutter view sizes itself from the document, so the page must be a
+       full-bleed, non-scrolling box on every device. */
+    html, body {
+      height: 100%;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #080A0C;
+      overscroll-behavior: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+  </style>
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="fuelconnect">
+  <meta name="apple-mobile-web-app-title" content="FuelOnDemand">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" sizes="48x48" href="favicon.png"/>
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/Icon-192.png"/>
+  <link rel="shortcut icon" type="image/png" href="favicon.png"/>
 
-  <title>fuelconnect</title>
+  <title>FuelOnDemand</title>
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    Google Maps JavaScript API (only needed for the web build).
+    Uncomment and add your key, then build with the same key so both sides agree:
+      flutter build web --dart-define=GOOGLE_MAPS_API_KEY=AIza...
+    Without it the app renders its built-in dark map preview.
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY&libraries=geometry" async></script>
+  -->
 </head>
 <body>
   <!--
@@ -42,5 +75,36 @@
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Some mobile browsers (and embedded preview frames) report a stale or
+    // zoomed viewport for the first paint, which leaves the Flutter view sized
+    // to a fraction of the screen. If the view ends up smaller than the real
+    // window, ask the engine to measure again.
+    (function () {
+      function viewportSize() {
+        var vv = window.visualViewport;
+        return [Math.round(vv ? vv.width : window.innerWidth), Math.round(vv ? vv.height : window.innerHeight)];
+      }
+
+      function refit() {
+        var host = document.querySelector('flutter-view');
+        if (!host) return;
+        var size = viewportSize();
+        var rect = host.getBoundingClientRect();
+        if (Math.abs(rect.width - size[0]) > 4 || Math.abs(rect.height - size[1]) > 4) {
+          window.dispatchEvent(new Event('resize'));
+        }
+      }
+
+      window.addEventListener('load', function () {
+        setTimeout(refit, 400);
+        setTimeout(refit, 1500);
+      });
+      window.addEventListener('orientationchange', function () {
+        setTimeout(refit, 300);
+      });
+      if (window.visualViewport) window.visualViewport.addEventListener('resize', refit);
+    })();
+  </script>
 </body>
 </html>

@@ -1,0 +1,290 @@
+{% extends "dashboard/base.html" %}
+{% load static fc %}
+{% block title %}{{ order.number }} · FuelOnDemand{% endblock %}
+
+{% block content %}
+<div class="detail-head">
+  <span class="avatar lg">{{ order.customer.initials }}</span>
+  <div class="grow">
+    <div class="eyebrow">{{ order.station.name }} · {{ order.created_at|daystamp }}</div>
+    <div class="detail-title">{{ order.number }}</div>
+    <div class="chip-row">
+      <span class="chip {{ order.status|status_tone }}">{{ order.get_status_display }}</span>
+      <span class="chip plain {{ order.payment_status|status_tone }}">{{ order.get_payment_status_display }}</span>
+      <span class="chip muted plain">{{ order.get_payment_method_display }}</span>
+      {% if order.rating %}<span class="chip gold plain">★ {{ order.rating }}/5</span>{% endif %}
+    </div>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-ghost" href="{% url 'console:orders' %}">{% icon "arrow" 16 %} All orders</a>
+    {% if order.can_cancel %}
+    <form method="post" action="{% url 'console:order_cancel' order.pk %}" data-confirm="Cancel {{ order.number }} and refund the customer where applicable?">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <input type="hidden" name="reason" value="Cancelled by operations">
+      <button class="btn btn-danger" type="submit">{% icon "close" 16 %} Cancel order</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="stack-16">
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Delivery timeline</h2>
+          <div class="card-sub">Payment → rider → collection → door</div>
+        </div>
+        <span class="tag">{{ order.eta_minutes }} min ETA</span>
+      </div>
+      <div class="card-body">
+        <ul class="timeline">
+          {% for step in timeline %}
+          <li class="{% if step.done %}done{% endif %}">
+            <div class="t-label">{{ step.label }}</div>
+            <div class="t-time">{% if step.at %}{{ step.at|daystamp }}{% else %}Pending{% endif %}</div>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Status events</h2>
+          <div class="card-sub">Append-only audit trail for this order</div>
+        </div>
+        <span class="tag">{{ events|length }} events</span>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>When</th><th>Status</th><th>Note</th><th>Actor</th></tr></thead>
+          <tbody>
+            {% for e in events %}
+            <tr>
+              <td class="small dim nowrap">{{ e.created_at|daystamp }}</td>
+              <td><span class="chip {{ e.status|status_tone }}">{{ e.get_status_display }}</span></td>
+              <td class="small">{{ e.note|default:"—" }}</td>
+              <td class="small">{{ e.actor.name|default:"System" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4"><div class="empty">No events recorded.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Tracking pings</h2>
+          <div class="card-sub">Latest rider positions reported by the app</div>
+        </div>
+        <span class="tag">{{ pings|length }} points</span>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>When</th><th class="num">Latitude</th><th class="num">Longitude</th><th>Rider</th></tr></thead>
+          <tbody>
+            {% for p in pings %}
+            <tr>
+              <td class="small dim nowrap">{{ p.created_at|daystamp }}</td>
+              <td class="num mono">{{ p.lat|floatformat:5 }}</td>
+              <td class="num mono">{{ p.lng|floatformat:5 }}</td>
+              <td class="small">{{ p.rider.name|default:"—" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4"><div class="empty">No location pings yet.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Money</h2>
+          <div class="card-sub">Ledger entries attached to this order</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Reference</th><th>Kind</th><th>User</th><th>Status</th><th class="num">Amount</th></tr></thead>
+          <tbody>
+            {% for tx in transactions %}
+            <tr>
+              <td class="mono small">{{ tx.reference }}</td>
+              <td class="small">{{ tx.get_kind_display }}</td>
+              <td class="small">{{ tx.user.name }}</td>
+              <td><span class="chip plain {{ tx.status|status_tone }}">{{ tx.get_status_display }}</span></td>
+              <td class="num amount {% if tx.amount > 0 %}pos{% else %}neg{% endif %}">{{ tx.amount|signed }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5"><div class="empty">No ledger entries for this order.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="stack-16">
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Price breakdown</h2>
+          <div class="card-sub">{{ order.litres }} L {{ order.get_fuel_type_display }} · {{ order.unit_price|money }}/L</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <dl class="kv">
+          <dt>Fuel</dt><dd>{{ order.fuel_total|money }}</dd>
+          <dt>Delivery</dt><dd>{{ order.delivery_fee|money }}</dd>
+          <dt>Service fee</dt><dd>{{ order.service_fee|money }}</dd>
+          <dt>Distance</dt><dd>{{ order.distance_km|floatformat:1 }} km</dd>
+          <dt>Rider pay</dt><dd>{{ order.rider_pay|money }}</dd>
+          <dt>Total charged</dt><dd class="total">{{ order.total|money }}</dd>
+        </dl>
+        <div class="divider"></div>
+        <div class="row-between small">
+          <span class="dim">Pickup code</span>
+          <span class="mono strong">{{ order.pickup_code|default:"—" }}</span>
+        </div>
+        <div class="row-between small mt-8">
+          <span class="dim">Delivery code</span>
+          <span class="mono strong">{{ order.delivery_code|default:"—" }}</span>
+        </div>
+        {% if order.note %}
+        <div class="divider"></div>
+        <div class="small dim">Customer note</div>
+        <div class="small">{{ order.note }}</div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Customer</h2>
+          <div class="card-sub">Who placed the order</div>
+        </div>
+        <a class="card-link" href="{% url 'console:customer_detail' order.customer.pk %}">Profile ↗</a>
+      </div>
+      <div class="card-body">
+        <div class="cell-user">
+          <span class="avatar gold">{{ order.customer.initials }}</span>
+          <div>
+            <div class="name">{{ order.customer.name }}</div>
+            <div class="sub mono">{{ order.customer.phone }}</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="small dim">Deliver to</div>
+        <div class="small">{{ order.delivery_address }}</div>
+        {% if order.lat and order.lng %}
+        <div class="tiny dim mono mt-8">{{ order.lat|floatformat:5 }}, {{ order.lng|floatformat:5 }}</div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Rider</h2>
+          <div class="card-sub">{% if order.rider %}Assigned{% else %}Waiting for dispatch{% endif %}</div>
+        </div>
+        {% if order.rider %}<a class="card-link" href="{% url 'console:rider_detail' order.rider.rider.pk %}">Profile ↗</a>{% endif %}
+      </div>
+      <div class="card-body">
+        {% if order.rider %}
+        <div class="cell-user">
+          <span class="avatar">{{ order.rider.initials }}</span>
+          <div>
+            <div class="name">{{ order.rider.name }}</div>
+            <div class="sub mono">{{ order.rider.rider.plate|default:"no plate" }} · {{ order.rider.phone }}</div>
+          </div>
+        </div>
+        {% else %}
+        <div class="empty" style="padding:10px 0">No rider assigned yet.</div>
+        {% endif %}
+
+        <form class="form-card mt-16" method="post" action="{% url 'console:order_assign' order.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <div class="field">
+            <label class="label" for="rider_id">Assign a rider</label>
+            <select class="select" id="rider_id" name="rider_id" required>
+              <option value="">Choose an approved rider…</option>
+              {% for rider in riders %}
+                <option value="{{ rider.pk }}" {% if order.rider_id == rider.pk %}selected{% endif %}>
+                  {{ rider.name }} · {{ rider.rider.plate|default:"no plate" }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <button class="btn btn-gold btn-block btn-sm" type="submit">{% icon "check" 14 %} Assign rider</button>
+        </form>
+      </div>
+    </section>
+
+    {% if order.status == "assigned" or order.status == "picked_up" or order.status == "arrived" %}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Advance delivery</h2>
+          <div class="card-sub">Mirror the rider's progress</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-card">
+          {% if order.status == "assigned" %}
+          <form method="post" action="{% url 'console:order_advance' order.pk %}">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+            <input type="hidden" name="status" value="picked_up">
+            <button class="btn btn-ghost btn-block" type="submit">{% icon "fuel" 16 %} Mark picked up</button>
+          </form>
+          {% elif order.status == "picked_up" %}
+          <form method="post" action="{% url 'console:order_advance' order.pk %}">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+            <input type="hidden" name="status" value="arrived">
+            <button class="btn btn-ghost btn-block" type="submit">{% icon "pin" 16 %} Mark arrived</button>
+          </form>
+          {% elif order.status == "arrived" %}
+          <form method="post" action="{% url 'console:order_advance' order.pk %}">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+            <input type="hidden" name="status" value="delivered">
+            <button class="btn btn-gold btn-block" type="submit">{% icon "check" 16 %} Mark delivered</button>
+          </form>
+          {% endif %}
+        </div>
+        <div class="hint mt-8">Advancing an order triggers rider pay, commission and notifications.</div>
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Station</h2>
+          <div class="card-sub">{{ order.station.get_brand_display }} forecourt</div>
+        </div>
+        <a class="card-link" href="{% url 'console:stations' %}#{{ order.station.slug }}">Network ↗</a>
+      </div>
+      <div class="card-body">
+        <div class="station-hero" style="margin:0;height:78px;background-image:url('{% static 'dashboard/img/station-card.jpg' %}')">
+          <span class="tag brand-tag">{{ order.station.get_brand_display }}</span>
+        </div>
+        <div class="mt-16">
+          <div class="strong">{{ order.station.name }}</div>
+          <div class="small dim">{{ order.station.address }}</div>
+          <div class="small mt-8">★ {{ order.station.rating|floatformat:1 }} · {{ order.station.reviews }} reviews · {{ order.station.service_radius_km }} km radius</div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,1 @@
+Run the backend first (`backend/README.md`: Docker or local Postgres/PostGIS, `npm install`, `npm run db:setup`, `npm run start:dev`; Swagger at `/docs`), then follow `flutter_app/README.md` to launch the Flutter prototype screens.

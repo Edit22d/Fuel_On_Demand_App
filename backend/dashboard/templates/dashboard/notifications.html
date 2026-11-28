@@ -1,0 +1,135 @@
+{% extends "dashboard/base.html" %}
+{% load static fc %}
+{% block title %}Notifications · FuelOnDemand{% endblock %}
+
+{% block content %}
+<div class="page-head-row">
+  <div>
+    <div class="eyebrow">Communications</div>
+    <h2 class="page-title-lg">Notifications</h2>
+    <p class="page-sub">Everything the platform has pushed to customers, riders, tanker drivers and station staff — and the broadcast desk to reach them.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-gold" href="#broadcast">{% icon "bell" 16 %} New broadcast</a>
+  </div>
+</div>
+
+<div class="grid cols-4 mb-16">
+  <div class="stat-tile"><div class="k">Messages sent</div><div class="v">{{ stats.sent }}</div></div>
+  <div class="stat-tile"><div class="k">Sent today</div><div class="v">{{ stats.today }}</div></div>
+  <div class="stat-tile"><div class="k">Unread</div><div class="v">{{ stats.unread }}</div></div>
+  <div class="stat-tile"><div class="k">People reached</div><div class="v">{{ stats.reach }}</div></div>
+</div>
+
+<form class="filters" method="get" action="{% url 'console:notifications' %}">
+  <div class="search" style="position:relative">
+    {% icon "search" %}
+    <input name="q" value="{{ filters.q }}" placeholder="Search title, message or recipient" aria-label="Search notifications">
+  </div>
+  <select class="select" name="kind" aria-label="Type">
+    <option value="">All types</option>
+    {% for value, label in kinds %}
+    <option value="{{ value }}" {% if filters.kind == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select class="select" name="role" aria-label="Audience">
+    <option value="">Everyone</option>
+    {% for value, label in roles %}
+    <option value="{{ value }}" {% if filters.role == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button class="btn btn-gold btn-sm" type="submit">{% icon "filter" 14 %} Apply</button>
+  <a class="btn btn-ghost btn-sm" href="{% url 'console:notifications' %}">Reset</a>
+</form>
+
+<section class="card">
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>Recipient</th><th>Message</th><th>Type</th><th>Status</th><th>Sent</th><th class="num">Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for n in rows %}
+        <tr>
+          <td>
+            <div class="cell-user">
+              <span class="avatar">{{ n.user.name|initials }}</span>
+              <div>
+                <div class="name">{{ n.user.name }}</div>
+                <div class="sub mono">{{ n.user.get_role_display }} · {{ n.user.phone }}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <div class="strong">{{ n.title }}</div>
+            <div class="tiny dim">{{ n.body }}</div>
+          </td>
+          <td><span class="chip {{ n.kind|status_tone }}">{{ n.get_kind_display }}</span></td>
+          <td>
+            {% if n.is_read %}
+            <span class="chip ok">Read</span>
+            {% else %}
+            <span class="chip">Unread</span>
+            {% endif %}
+          </td>
+          <td><span class="tiny dim">{{ n.created_at|ago }}</span></td>
+          <td class="num">
+            <form method="post" action="{% url 'console:notification_delete' n.pk %}">
+              {% csrf_token %}
+              <button class="btn btn-ghost btn-sm" type="submit" title="Delete notification">{% icon "trash" 14 %}</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6"><div class="empty">No notifications match this filter.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="card mt-16" id="broadcast">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">Broadcast desk</h2>
+      <div class="card-sub">Send a push to a whole segment — order updates, stock alerts or promotions.</div>
+    </div>
+    <span class="chip gold">{% icon "bell" 12 %} Push</span>
+  </div>
+  <div class="card-body">
+    <form method="post" action="{% url 'console:notification_broadcast' %}">
+      {% csrf_token %}
+      <div class="form-row">
+        <label class="field">
+          <span class="label">Audience</span>
+          <select class="select" name="audience" required>
+            {% for value, label in audiences %}
+            <option value="{{ value }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span class="label">Type</span>
+          <select class="select" name="kind">
+            {% for value, label in kinds %}
+            <option value="{{ value }}" {% if value == "system" %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label class="field">
+          <span class="label">Title</span>
+          <input class="input" name="title" maxlength="90" placeholder="Fuel prices updated" required>
+        </label>
+      </div>
+      <label class="field mt-16">
+        <span class="label">Message</span>
+        <textarea class="input" name="body" rows="3" maxlength="240" placeholder="Petrol is now UGX 6,850 per litre at all Stabex stations." required></textarea>
+      </label>
+      <div class="head-actions mt-16">
+        <button class="btn btn-gold" type="submit">{% icon "bell" 16 %} Send broadcast</button>
+        <span class="tiny dim">Recipients must be active accounts; suspended users are skipped.</span>
+      </div>
+    </form>
+  </div>
+</section>
+{% endblock %}

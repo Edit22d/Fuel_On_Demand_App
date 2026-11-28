@@ -1,0 +1,115 @@
+{% extends "dashboard/base.html" %}
+{% load static fc %}
+{% block title %}Settings · FuelOnDemand{% endblock %}
+
+{% block content %}
+<div class="page-head-row">
+  <div>
+    <div class="eyebrow">System</div>
+    <h2 class="page-title-lg">Settings</h2>
+    <p class="page-sub">Business rules the customer and rider apps read at runtime — fees, support line, console banner and payout cadence.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-ghost" href="{% url 'console:audit' %}">{% icon "audit" 16 %} Security log</a>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Operations rules</h2>
+        <div class="card-sub">Saved values override the defaults in code immediately</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <form class="form-card" method="post" action="{% url 'console:settings' %}">
+        {% csrf_token %}
+        {% for row in rows %}
+          {% if row.kind == "text" %}
+          <div class="field">
+            <label class="label" for="{{ row.key }}">{{ row.label }}</label>
+            <input class="input" id="{{ row.key }}" name="{{ row.key }}" value="{{ row.value }}">
+          </div>
+          {% else %}
+          <div class="field">
+            <label class="label" for="{{ row.key }}">{{ row.label }}</label>
+            <input class="input" id="{{ row.key }}" name="{{ row.key }}" value="{{ row.value }}" inputmode="numeric">
+          </div>
+          {% endif %}
+        {% endfor %}
+        <div class="row-between">
+          <span class="hint">Changes are audited with your operator identity.</span>
+          <button class="btn btn-gold" type="submit">{% icon "check" 16 %} Save settings</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <div class="stack-16">
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Security posture</h2>
+          <div class="card-sub">What protects this console</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <dl class="kv">
+          {% for item in security %}
+          <dt>{{ item.label }}</dt><dd>{{ item.value }}</dd>
+          {% endfor %}
+        </dl>
+        <div class="divider"></div>
+        <div class="small dim">
+          Sessions are invalidated on sign-out, rotated on login, and every mutation records the operator,
+          IP address and user agent.
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Platform</h2>
+          <div class="card-sub">Runtime configuration</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <dl class="kv">
+          <dt>Currency</dt><dd>{{ FC.currency }}</dd>
+          <dt>Payment driver</dt><dd>{{ FC.payment_driver }}</dd>
+          <dt>Cancellation fee</dt><dd>{{ FC.cancellation_fee|money }}</dd>
+          <dt>OTP validity</dt><dd>{{ FC.otp_ttl_seconds }} s</dd>
+          <dt>OTP resend</dt><dd>{{ FC.otp_resend_seconds }} s</dd>
+          <dt>Live refresh</dt><dd>{{ refresh_ms }} ms</dd>
+        </dl>
+        <div class="divider"></div>
+        <div class="chip-row">
+          <span class="chip ok">CSRF</span>
+          <span class="chip gold">Audit</span>
+          <span class="chip info">JWT API</span>
+          <span class="chip violet">Role gates</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">API</h2>
+          <div class="card-sub">The mobile contract this console shares</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="small dim">Base path</div>
+        <div class="mono small">/api/v1</div>
+        <div class="divider"></div>
+        <div class="small dim">Health check</div>
+        <div class="mono small">/ · {{ FC.currency }} sandbox</div>
+        <a class="btn btn-ghost btn-block mt-16" href="/" target="_blank" rel="noreferrer">Open health endpoint ↗</a>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

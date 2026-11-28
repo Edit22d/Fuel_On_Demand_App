@@ -1,8 +1,21 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Network access for the API + Google Maps tiles. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- GPS for live delivery tracking and pickup pinning. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
+    <!-- Dialler hand-off for "call your delivery partner". -->
     <application
-        android:label="fuelconnect"
+        android:label="FuelOnDemand"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Google Maps SDK key. Set it in android/local.properties (mapsApiKey=...)
+             or pass --dart-define=GOOGLE_MAPS_API_KEY=... (see MapConfig). -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${mapsApiKey}"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -40,6 +53,10 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL"/>
+            <data android:scheme="tel"/>
         </intent>
     </queries>
 </manifest>

@@ -1,0 +1,2 @@
+- Cross-service API contracts (envelope shape, OTP timing, phone normalisation, payment aliases, prices map) are pinned in the root README and mirrored in the backend docs rather than generated from a shared schema.
+- Each child service owns its own README with self-contained setup instructions; the root README only points to them.

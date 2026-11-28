@@ -1,0 +1,6 @@
+- Screens are declared as entries in the `Screen` enum and wired into `Shell._screen` via a single exhaustive switch, so adding a route means updating both the enum and the switch.
+- Global mutable state (navigation, theme, order builder, wallet, notifications) is exposed through a singleton `final app = AppState()` of type `ChangeNotifier`, and screens consume it via `ListenableBuilder` or direct field access.
+- Navigation helpers are centralized on `app.go(screen, {root, replace})` and `app.backOr(fallback)`; screens never call Navigator.push/pop directly.
+- Domain data models (Vehicle, Place, PayMethod, WalletTx, Notice) are defined as immutable `const` classes in `core/data.dart` and referenced throughout screens.
+- Auth flows return typed `AuthResult.ok(...)` / `AuthResult.fail(...)` values instead of throwing, keeping error handling uniform across sign-in, sign-up, OTP verification, and password reset.
+- Reusable UI primitives (`FcText`, `Ic`, `Tap`, `fs`, `al`, `vw`, `vh`, `topInset`) are re-exported through `core/core.dart` and used consistently across all screens.

@@ -1,0 +1,12 @@
+schema_version: 1
+module_path: ""
+title: FuelConnect Full-Stack Platform
+scope:
+    - README.md
+    - flutter_app.zip
+    - screenshot_initial.png
+    - screenshot_reload.png
+    - screenshot_waiting.png
+source_files: []
+depends_on: []
+related_to: []

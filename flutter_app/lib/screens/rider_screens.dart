@@ -2,9 +2,11 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/core.dart';
 import '../core/rider_state.dart';
 import '../services/auth_service.dart';
+import 'sheets.dart';
 
 // ===========================================================================
 // Rider / delivery-partner screens (from the Figma prototype)
@@ -80,9 +82,14 @@ class _JobCard extends StatelessWidget {
         child: Panel(
           padding: const EdgeInsets.all(16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              const LivePill('NEW REQUEST'),
-              Text('UGX ${fmt(job.pay)}', style: fs(14.4, color: FC.gold, w: FontWeight.w800, h: 1.2)),
+            Row(children: [
+              const Flexible(child: LivePill('NEW REQUEST')),
+              const SizedBox(width: 10),
+              // The payout shrinks with the card instead of overflowing it.
+              Flexible(
+                child: Text('UGX ${fmt(job.pay)}',
+                    maxLines: 1, textAlign: TextAlign.right, style: fs(14.4, color: FC.gold, w: FontWeight.w800, h: 1.2)),
+              ),
             ]),
             const SizedBox(height: 14),
             _RouteStop(IconName.fuel, job.station, 'Pickup · ${job.pickupKm.toStringAsFixed(1)} km away'),
@@ -104,44 +111,22 @@ class _JobCard extends StatelessWidget {
       );
 }
 
-/// Dotted L-route between a pickup and a drop-off pin on the dark map grid.
+/// Live route between the forecourt (pickup) and the customer (drop-off).
 class _RouteMap extends StatelessWidget {
-  final double height;
-
-  const _RouteMap({this.height = 250});
-
-  Widget _pin(IconName icon, bool gold) => Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: gold ? FC.gold : FC.ink,
-          boxShadow: gold
-              ? [BoxShadow(color: al(FC.gold, .14), spreadRadius: 6)]
-              : null,
-        ),
-        child: Center(
-          child: Ic(icon, size: 18, color: const Color(0xFF111111)),
-        ),
-      );
-
+  const _RouteMap();
 
   @override
-  Widget build(BuildContext context) => Container(
-        height: height,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(color: const Color(0xFF13171A), borderRadius: BorderRadius.circular(18), border: Border.all(color: FC.line)),
-        child: LayoutBuilder(builder: (c, cons) {
-          final w = cons.maxWidth;
-          final left = w * .24, top = 44.0, rw = w * .52, rh = height - 90;
-          return Stack(children: [
-            const Positioned.fill(child: MapGrid()),
-            Positioned(left: left, top: top, child: RouteLine(width: rw, height: rh, stroke: 4, dotted: true)),
-            Positioned(left: left - 18 + 2, top: top - 18, child: _pin(IconName.fuel, true)),
-            Positioned(left: left + rw - 18, top: top + rh - 18, child: _pin(IconName.location, false)),
-          ]);
-        }),
-      );
+  Widget build(BuildContext context) {
+    final job = rider.job;
+    return LiveMap(
+      height: 220,
+      pickup: job.pickup,
+      destination: job.drop,
+      route: [job.pickup, job.drop],
+      showRecenter: false,
+      padding: const EdgeInsets.all(48),
+    );
+  }
 }
 
 class _EarnPanel extends StatelessWidget {
@@ -351,7 +336,7 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
           const SizedBox(height: 9),
           FcText(titles[_step - 1], kind: Tx.title),
           const SizedBox(height: 9),
-          FcText('Join FuelConnect’s certified delivery partner network.', color: FC.muted),
+          FcText('Join FuelOnDemand’s certified delivery partner network.', color: FC.muted),
         ]),
         if (_step == 1) ...[
           FcField(label: 'Full legal name', hint: 'Your full name', icon: IconName.profile, controller: _name, error: _nameErr, action: TextInputAction.next),
@@ -421,7 +406,9 @@ class _RiderLoginScreenState extends State<RiderLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final wide = isWide(context);
+    // Match the customer auth layout: stacked below 900px so portrait tablets
+    // keep a readable form width.
+    final wide = vw(context) >= 900;
     final visual = Stack(fit: StackFit.expand, children: [
       Image.asset('assets/images/station-card.jpg', fit: BoxFit.cover, width: double.infinity, height: double.infinity),
       const ImageShade(),
@@ -433,15 +420,16 @@ class _RiderLoginScreenState extends State<RiderLoginScreen> {
       const FcText('Welcome back, partner.', kind: Tx.title),
       FcText('Sign in to view and manage your deliveries.', color: FC.muted),
       FcField(label: 'Phone number', hint: '+256 700 123 456', icon: IconName.phone, controller: _phone, keyboard: TextInputType.phone, error: _phoneErr, action: TextInputAction.next),
-      FcField(label: 'Password', hint: 'Enter your password', icon: IconName.shield, password: true, controller: _pass, error: _passErr, action: TextInputAction.done, onSubmitted: (_) => _submit()),
+      FcField(label: 'Password', hint: 'Enter your password', icon: IconName.shield, password: true, showToggle: true, controller: _pass, error: _passErr, action: TextInputAction.done, onSubmitted: (_) => _submit()),
       Align(
         alignment: Alignment.centerRight,
-        child: TextAction('Forgot password?', onTap: () => toast(context, 'Rider password resets will work once the backend is connected. For now, contact FuelConnect support.')),
+        child: TextAction('Forgot password?', onTap: () => widget.go(Screen.support)),
       ),
       if (_formErr != null) FormError(_formErr!),
       FcButton('Sign in as rider', loading: _busy, onTap: _submit),
       FcButton('Register as a rider', variant: BV.outline, onTap: () => widget.go(Screen.riderRegistration)),
-      if (kDemoMode) FcText('Demo rider: +256 701 234 567 · Rider@2025', kind: Tx.caption, color: FC.dim, align: TextAlign.center),
+      FcButton('Back to FuelOnDemand', key: const ValueKey('page-back'), variant: BV.ghost, onTap: () => widget.go(Screen.home, root: true)),
+      if (kShowDevOtp) FcText('Demo rider: +256 701 234 567 · Rider@2025', kind: Tx.caption, color: FC.dim, align: TextAlign.center),
     ];
     final pad = cl(context, 22, 6, 70);
     if (wide) {
@@ -456,7 +444,7 @@ class _RiderLoginScreenState extends State<RiderLoginScreen> {
                   constraints: BoxConstraints(minHeight: cons.maxHeight),
                   child: Center(
                     child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: vw(context) * .08, vertical: vh(context) * .08),
+                      padding: EdgeInsets.symmetric(horizontal: cl(context, 24, 6, 72), vertical: vh(context) * .08),
                       child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 480), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: gapped(form, 15))),
                     ),
                   ),
@@ -529,7 +517,7 @@ class RiderDashboardScreen extends StatelessWidget {
         builder: (context, _) {
           final jobs = rider.jobs;
           return AppPage(
-            header: _riderHeader('Rider dashboard', go),
+            header: _riderHeader('Rider dashboard', go, back: Screen.home),
             body: ContentSection(maxWide: 760, children: [
               Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -821,6 +809,13 @@ class _RiderDecisionScreenState extends State<RiderDecisionScreen> {
               _rejecting = !_rejecting;
               _reason = '';
             })),
+        if (_rejecting)
+          Center(
+            child: TextAction(
+              'Need help rejecting? Chat with support',
+              onTap: () => showSupportChat(context, topic: 'I need help rejecting delivery #${j.id}.'),
+            ),
+          ),
       ]),
     );
   }
@@ -837,7 +832,6 @@ class RiderNavigationScreen extends StatefulWidget {
 }
 
 class _RiderNavigationScreenState extends State<RiderNavigationScreen> {
-  static const _pos = [Offset(.58, .24), Offset(.49, .35), Offset(.41, .46), Offset(.34, .55)];
   static const _turns = [
     ['350 M', 'Turn right onto Acacia Avenue'],
     ['900 M', 'Continue straight on Kira Road'],
@@ -863,60 +857,63 @@ class _RiderNavigationScreenState extends State<RiderNavigationScreen> {
     super.dispose();
   }
 
-  Widget _map(BuildContext context) => Container(
-        color: const Color(0xFF13171A),
-        child: LayoutBuilder(builder: (c, cons) {
-          final w = cons.maxWidth, h = cons.maxHeight;
-          final p = _pos[_i];
-          return ClipRect(
-            child: Stack(children: [
-              const Positioned.fill(child: MapGrid()),
-              Positioned(
-                left: -w * .15,
-                top: h * .45,
-                width: w * 1.3,
-                height: 22,
-                child: Transform.rotate(angle: -12 * math.pi / 180, child: Container(decoration: const BoxDecoration(color: Color(0xFF2C3034), boxShadow: [BoxShadow(color: Color(0xFF1B1F23), spreadRadius: 8)]))),
-              ),
-              Positioned(
-                left: w * .57,
-                top: -h * .05,
-                width: 22,
-                height: h * 1.1,
-                child: Transform.rotate(angle: 16 * math.pi / 180, child: Container(decoration: const BoxDecoration(color: Color(0xFF2C3034), boxShadow: [BoxShadow(color: Color(0xFF1B1F23), spreadRadius: 8)]))),
-              ),
-              Positioned(left: w * .30, top: h * .27, child: Transform.rotate(angle: -12 * math.pi / 180, child: const RouteLine(width: 190, height: 115, stroke: 5, dotted: true))),
-              Positioned(
-                left: w * .27,
-                top: h * .62,
-                child: Container(width: 43, height: 43, decoration: BoxDecoration(shape: BoxShape.circle, color: FC.ink), child: const Center(child: Ic(IconName.location, color: Color(0xFF111111)))),
-              ),
-              AnimatedPositioned(
-                duration: const Duration(milliseconds: 900),
-                curve: Curves.easeInOut,
-                left: w * p.dx,
-                top: h * p.dy,
-                child: Container(
-                  width: 43,
-                  height: 43,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: FC.gold, boxShadow: [BoxShadow(color: al(FC.gold, .12), spreadRadius: 8)]),
-                  child: const Center(child: Ic(IconName.truck, color: Color(0xFF111111))),
-                ),
-              ),
-              Positioned(
-                top: topInset(context) + 17,
-                left: 18,
-                right: 18,
-                child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  FcButton.icon(IconName.arrow, onTap: () => widget.go(Screen.riderDashboard, root: true)),
-                  Text('Navigate to customer', style: fs(12, w: FontWeight.w700)),
-                  const SizedBox(width: 42), // the global menu icon sits here
+  Widget _back() => FcButton.icon(IconName.arrow, key: const ValueKey('page-back'), onTap: () => widget.go(Screen.riderDashboard, root: true));
+
+  /// On phones the scrolling sheet is painted over the map, so it would swallow
+  /// taps meant for the map's back button — the narrow layout renders `_back()`
+  /// itself, above the sheet.
+  Widget _map(BuildContext context, {required bool showBack}) {
+    final j = rider.job;
+    final driver = lerpLatLng(j.pickup, j.drop, (_i / 3) * .82);
+    return LiveMap(
+      driver: driver,
+      pickup: j.pickup,
+      destination: j.drop,
+      route: [j.pickup, j.drop],
+      myLocation: rider.online,
+      radius: 0,
+      padding: const EdgeInsets.only(top: 104, bottom: 40),
+      overlay: Positioned(
+        top: topInset(context) + 10,
+        left: 14,
+        right: 14,
+        child: Row(children: [
+          if (showBack) ...[_back(), const SizedBox(width: 10)],
+          Expanded(
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+                decoration: BoxDecoration(color: al(FC.black, .84), borderRadius: BorderRadius.circular(20), border: Border.all(color: FC.line)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  PulseDot(color: rider.online ? FC.green : FC.muted, size: 5),
+                  const SizedBox(width: 7),
+                  Flexible(
+                    child: Text('NAVIGATING TO CUSTOMER',
+                        maxLines: 1, overflow: TextOverflow.ellipsis, style: fs(8.2, color: FC.gold, w: FontWeight.w800, ls: .7, h: 1.2)),
+                  ),
                 ]),
               ),
-            ]),
-          );
-        }),
-      );
+            ),
+          ),
+        ]),
+      ),
+    );
+  }
+
+  Future<void> _callCustomer() async {
+    final phone = rider.job.customerPhone;
+    var ok = false;
+    if (phone.isNotEmpty) {
+      try {
+        ok = await launchUrl(Uri(scheme: 'tel', path: phone));
+      } catch (_) {
+        ok = false;
+      }
+    }
+    if (ok || !mounted) return;
+    toast(context, 'No phone number is saved for this customer.');
+  }
 
   Widget _sheet(BuildContext context, {required bool handle}) {
     final j = rider.job;
@@ -949,7 +946,7 @@ class _RiderNavigationScreenState extends State<RiderNavigationScreen> {
               FcText('${j.vehicle} · ${j.plate}', kind: Tx.caption, color: FC.muted, maxLines: 1),
             ]),
           ),
-          FcButton.icon(IconName.phone, onTap: () => toast(context, 'Calling the customer will work once the backend shares contact details.')),
+          FcButton.icon(IconName.phone, onTap: _callCustomer),
         ]),
       ),
       _EarnPanel('ESTIMATED ARRIVAL', '${_eta[_i]} minutes', _km[_i]),
@@ -964,7 +961,7 @@ class _RiderNavigationScreenState extends State<RiderNavigationScreen> {
       return ColoredBox(
         color: FC.black,
         child: Row(children: [
-          Expanded(flex: 56, child: _map(context)),
+          Expanded(flex: 56, child: _map(context, showBack: true)),
           Expanded(
             flex: 44,
             child: LayoutBuilder(
@@ -983,7 +980,7 @@ class _RiderNavigationScreenState extends State<RiderNavigationScreen> {
     return ColoredBox(
       color: FC.black,
       child: Stack(children: [
-        Positioned(left: 0, right: 0, top: 0, height: mapH, child: _map(context)),
+        Positioned(left: 0, right: 0, top: 0, height: mapH, child: _map(context, showBack: false)),
         Positioned.fill(
           child: SingleChildScrollView(
             child: Column(children: [
@@ -997,6 +994,7 @@ class _RiderNavigationScreenState extends State<RiderNavigationScreen> {
             ]),
           ),
         ),
+        Positioned(top: topInset(context) + 10, left: 14, child: _back()),
       ]),
     );
   }
@@ -1102,7 +1100,7 @@ class _RiderPickupScreenState extends State<RiderPickupScreen> {
           action: TextInputAction.done,
           onSubmitted: (_) => _confirm(),
         ),
-        if (kDemoMode) FcText('Demo mode: any 6 digits are accepted.', kind: Tx.caption, color: FC.dim),
+        if (kShowDevOtp) FcText('Demo mode: any 6 digits are accepted.', kind: Tx.caption, color: FC.dim),
         FcButton('Confirm fuel pickup', onTap: _checks.every((v) => v) ? _confirm : null),
       ]),
     );
@@ -1234,7 +1232,7 @@ class _RiderDeliveryScreenState extends State<RiderDeliveryScreen> {
           formatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)],
           action: TextInputAction.done,
         ),
-        if (kDemoMode) FcText('Demo mode: any 4 digits are accepted.', kind: Tx.caption, color: FC.dim),
+        if (kShowDevOtp) FcText('Demo mode: any 4 digits are accepted.', kind: Tx.caption, color: FC.dim),
         Tap(
           onTap: () => setState(() => _photo = !_photo),
           child: Panel(
@@ -1367,7 +1365,7 @@ class _RiderEarningsScreenState extends State<RiderEarningsScreen> {
           ]),
           const SizedBox(height: 14),
           _chart(),
-          SectionHeading('Recent earnings', trailing: TextAction('Statement', onTap: () => toast(context, 'Earnings statements will be available once the backend is connected.'))),
+          SectionHeading('Recent earnings', trailing: TextAction('Statement', onTap: () => toast(context, 'Statement export is coming soon.'))),
           Panel(
             padding: EdgeInsets.zero,
             child: Column(children: [

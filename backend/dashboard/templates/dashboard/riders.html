@@ -1,0 +1,87 @@
+{% extends "dashboard/base.html" %}
+{% load static fc %}
+{% block title %}Riders · FuelOnDemand{% endblock %}
+
+{% block content %}
+<div class="page-head-row">
+  <div>
+    <div class="eyebrow">Network</div>
+    <h2 class="page-title-lg">Riders</h2>
+    <p class="page-sub">Fleet applications, availability and performance. Approvals take effect immediately across both apps.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-ghost" href="{% url 'console:live' %}">{% icon "map" 16 %} Live map</a>
+    <a class="btn btn-gold" href="{% url 'console:riders' %}?status=pending">{% icon "clock" 16 %} Review queue</a>
+  </div>
+</div>
+
+<div class="grid cols-3 mb-16">
+  <div class="stat-tile"><div class="k">Approved</div><div class="v">{{ counts.approved }}</div></div>
+  <div class="stat-tile"><div class="k">Online now</div><div class="v">{{ counts.online }}</div></div>
+  <div class="stat-tile"><div class="k">Pending review</div><div class="v">{{ counts.pending }}</div></div>
+</div>
+
+<div class="filters">
+  <a class="btn btn-sm {% if not filters.status %}btn-gold{% else %}btn-ghost{% endif %}" href="{% url 'console:riders' %}">All</a>
+  {% for value, label in statuses %}
+    <a class="btn btn-sm {% if filters.status == value %}btn-gold{% else %}btn-ghost{% endif %}"
+       href="{% url 'console:riders' %}?status={{ value }}">{{ label }}</a>
+  {% endfor %}
+  <span class="spacer"></span>
+  <form method="get" action="{% url 'console:riders' %}" class="row" style="gap:8px">
+    {% if filters.status %}<input type="hidden" name="status" value="{{ filters.status }}">{% endif %}
+    <div class="search" style="position:relative">
+      {% icon "search" %}
+      <input name="q" value="{{ filters.q }}" placeholder="Name, phone or plate" aria-label="Search riders">
+    </div>
+    <button class="btn btn-ghost btn-sm" type="submit">Search</button>
+  </form>
+</div>
+
+<section class="card">
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr>
+          <th>Rider</th><th>Vehicle</th><th>Status</th><th>Availability</th>
+          <th class="num">Rating</th><th class="num">Deliveries</th><th class="num">Earnings</th><th>Joined</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in page %}
+        <tr>
+          <td>
+            <div class="cell-user">
+              <span class="avatar">{{ p.user.initials }}</span>
+              <div>
+                <div class="name"><a href="{% url 'console:rider_detail' p.pk %}">{{ p.user.name }}</a></div>
+                <div class="sub mono">{{ p.user.phone }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="small">
+            {{ p.get_vehicle_type_display }}
+            <div class="tiny dim mono">{{ p.plate|default:"no plate" }}</div>
+          </td>
+          <td><span class="chip {{ p.status|status_tone }}">{{ p.get_status_display }}</span></td>
+          <td>
+            {% if p.status == "approved" %}
+              {% if p.online %}<span class="chip ok">Online</span>{% else %}<span class="chip muted">Offline</span>{% endif %}
+            {% else %}
+              <span class="tiny dim">—</span>
+            {% endif %}
+          </td>
+          <td class="num">★ {{ p.rating|floatformat:1 }}</td>
+          <td class="num strong">{{ p.deliveries_total }}</td>
+          <td class="num">{{ p.earnings_total|money }}</td>
+          <td class="small dim nowrap">{{ p.created_at|ago }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8"><div class="empty">No riders match this view.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "dashboard/_pagination.html" %}
+</section>
+{% endblock %}

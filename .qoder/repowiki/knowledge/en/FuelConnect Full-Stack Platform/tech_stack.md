@@ -1,0 +1,1 @@
+NestJS 11 + Prisma + PostgreSQL/PostGIS + Redis + Socket.IO on the backend; Flutter on the frontend — both sides are orchestrated from this repo root via their own READMEs.

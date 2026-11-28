@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'core/core.dart';
+import 'services/api_client.dart';
 import 'services/auth_service.dart';
 import 'shell.dart';
 
@@ -11,15 +12,20 @@ Future<void> main() async {
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.light,
     statusBarBrightness: Brightness.dark,
-    systemNavigationBarColor:Colors.transparent,
+    systemNavigationBarColor: Colors.transparent,
     systemNavigationBarIconBrightness: Brightness.light,
   ));
   await auth.init();
-  runApp(const FuelConnectApp());
+  ApiClient.instance.onUnauthorized = () {
+    auth.handleUnauthorized();
+    app.go(Screen.login, root: true);
+  };
+  app.go(auth.isAuthenticated ? Screen.home : Screen.splash, root: true);
+  runApp(const FuelOnDemandApp());
 }
 
-class FuelConnectApp extends StatelessWidget {
-  const FuelConnectApp({super.key});
+class FuelOnDemandApp extends StatelessWidget {
+  const FuelOnDemandApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +33,7 @@ class FuelConnectApp extends StatelessWidget {
     return ListenableBuilder(
       listenable: app,
       builder: (context, _) => MaterialApp(
-        title: 'FuelConnect',
+        title: 'FuelOnDemand',
         debugShowCheckedModeBanner: false,
         theme: buildTheme(),
         darkTheme: buildTheme(),
@@ -40,12 +46,15 @@ class FuelConnectApp extends StatelessWidget {
             value: SystemUiOverlayStyle(
               statusBarColor: Colors.transparent,
               statusBarIconBrightness: icons,
-              statusBarBrightness: app.isDark ? Brightness.dark : Brightness.light,
+              statusBarBrightness:
+                  app.isDark ? Brightness.dark : Brightness.light,
               systemNavigationBarColor: Colors.transparent,
               systemNavigationBarIconBrightness: icons,
             ),
             child: MediaQuery(
-              data: mq.copyWith(textScaler: mq.textScaler.clamp(minScaleFactor: 0.9, maxScaleFactor: 1.2)),
+              data: mq.copyWith(
+                  textScaler: mq.textScaler
+                      .clamp(minScaleFactor: 0.9, maxScaleFactor: 1.2)),
               child: child ?? const SizedBox.shrink(),
             ),
           );

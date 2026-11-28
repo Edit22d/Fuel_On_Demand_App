@@ -1,0 +1,77 @@
+{% extends "dashboard/base.html" %}
+{% load static fc %}
+{% block title %}Support · FuelOnDemand{% endblock %}
+
+{% block content %}
+<div class="page-head-row">
+  <div>
+    <div class="eyebrow">Business</div>
+    <h2 class="page-title-lg">Support</h2>
+    <p class="page-sub">Customer conversations, triaged by priority. Replies are emailed and mirrored into the app inbox.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-ghost" href="{% url 'console:support' %}?status=open">{% icon "ticket" 16 %} Open queue</a>
+  </div>
+</div>
+
+<div class="grid cols-3 mb-16">
+  <div class="stat-tile"><div class="k">Open</div><div class="v">{{ counts.open }}</div></div>
+  <div class="stat-tile"><div class="k">Waiting on customer</div><div class="v">{{ counts.pending }}</div></div>
+  <div class="stat-tile"><div class="k">Urgent</div><div class="v">{{ counts.urgent }}</div></div>
+</div>
+
+<form class="filters" method="get" action="{% url 'console:support' %}">
+  <div class="search" style="position:relative">
+    {% icon "search" %}
+    <input name="q" value="{{ filters.q }}" placeholder="Subject, reference or customer" aria-label="Search tickets">
+  </div>
+  <select class="select" name="status" aria-label="Status">
+    <option value="">Any status</option>
+    {% for value, label in statuses %}
+      <option value="{{ value }}" {% if filters.status == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <select class="select" name="priority" aria-label="Priority">
+    <option value="">Any priority</option>
+    {% for value, label in priorities %}
+      <option value="{{ value }}" {% if filters.priority == value %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button class="btn btn-gold btn-sm" type="submit">{% icon "filter" 14 %} Apply</button>
+  <a class="btn btn-ghost btn-sm" href="{% url 'console:support' %}">Reset</a>
+</form>
+
+<div class="stack-16">
+  {% for t in page %}
+  <a class="card pad" href="{% url 'console:support_detail' t.pk %}" style="display:block">
+    <div class="row-between">
+      <div class="cell-user" style="min-width:0">
+        <span class="avatar">{{ t.customer.initials }}</span>
+        <div style="min-width:0">
+          <div class="name">{{ t.subject }}</div>
+          <div class="sub">{{ t.customer.name }} · {{ t.reference }} · {{ t.created_at|ago }}</div>
+        </div>
+      </div>
+      <div class="chip-row" style="justify-content:flex-end">
+        <span class="chip {{ t.priority|status_tone }}">{{ t.get_priority_display }}</span>
+        <span class="chip plain {{ t.status|status_tone }}">{{ t.get_status_display }}</span>
+      </div>
+    </div>
+    <div class="small dim mt-8" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
+      {{ t.message }}
+    </div>
+    {% if t.order %}
+    <div class="tiny dim mono mt-8">Order {{ t.order.number }} · {{ t.order.total|money }}</div>
+    {% endif %}
+  </a>
+  {% empty %}
+  <div class="card pad"><div class="empty">No tickets match this view.</div></div>
+  {% endfor %}
+</div>
+
+{% if page.paginator.num_pages > 1 %}
+<section class="card mt-16">
+  {% include "dashboard/_pagination.html" %}
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends "dashboard/base.html" %}
+{% load static fc %}
+{% block title %}{{ rider.name }} · Rider · FuelOnDemand{% endblock %}
+
+{% block content %}
+<div class="detail-head">
+  <span class="avatar lg">{{ rider.initials }}</span>
+  <div class="grow">
+    <div class="eyebrow">Rider · {{ profile.get_vehicle_type_display }}</div>
+    <div class="detail-title">{{ rider.name }}</div>
+    <div class="chip-row">
+      <span class="chip {{ profile.status|status_tone }}">{{ profile.get_status_display }}</span>
+      {% if profile.online %}<span class="chip ok">On duty</span>{% else %}<span class="chip muted">Off duty</span>{% endif %}
+      <span class="chip gold plain">★ {{ profile.rating|floatformat:1 }}</span>
+      <span class="chip muted plain mono">{{ rider.phone }}</span>
+    </div>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-ghost" href="{% url 'console:riders' %}">{% icon "arrow" 16 %} All riders</a>
+    {% if active_order %}
+    <a class="btn btn-gold" href="{% url 'console:order_detail' active_order.pk %}">{% icon "live" 16 %} Active delivery</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="grid cols-4 mb-16">
+  <div class="stat-tile"><div class="k">Deliveries</div><div class="v">{{ delivered_count }}</div></div>
+  <div class="stat-tile"><div class="k">Lifetime earnings</div><div class="v">{{ profile.earnings_total|short }}</div></div>
+  <div class="stat-tile"><div class="k">Commission</div><div class="v">{{ profile.commission_pct }}%</div></div>
+  <div class="stat-tile"><div class="k">Joined</div><div class="v small">{{ profile.created_at|daystamp }}</div></div>
+</div>
+
+<div class="detail-grid">
+  <div class="stack-16">
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Recent deliveries</h2>
+          <div class="card-sub">Last 15 orders handled</div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Order</th><th>Customer</th><th>Station</th><th>Status</th><th class="num">Pay</th><th class="num">Total</th></tr></thead>
+          <tbody>
+            {% for o in deliveries %}
+            <tr>
+              <td><a class="cell-link mono" href="{% url 'console:order_detail' o.pk %}">{{ o.number }}</a></td>
+              <td class="small">{{ o.customer.name }}</td>
+              <td class="small">{{ o.station.name }}</td>
+              <td><span class="chip {{ o.status|status_tone }}">{{ o.get_status_display }}</span></td>
+              <td class="num">{{ o.rider_pay|money }}</td>
+              <td class="num amount">{{ o.total|money }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6"><div class="empty">No deliveries assigned yet.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Earnings ledger</h2>
+          <div class="card-sub">Delivery pay credited to this rider</div>
+        </div>
+        <a class="card-link" href="{% url 'console:payments' %}?q={{ rider.phone }}">Full ledger ↗</a>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>Reference</th><th>When</th><th>Note</th><th class="num">Amount</th></tr></thead>
+          <tbody>
+            {% for tx in earnings %}
+            <tr>
+              <td class="mono small">{{ tx.reference }}</td>
+              <td class="small dim nowrap">{{ tx.created_at|daystamp }}</td>
+              <td class="small">{{ tx.note|default:"—" }}</td>
+              <td class="num amount pos">{{ tx.amount|signed }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4"><div class="empty">No earnings recorded.</div></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <div class="stack-16">
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Application</h2>
+          <div class="card-sub">Documents and verification</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <dl class="kv">
+          <dt>Phone</dt><dd class="mono">{{ rider.phone }}</dd>
+          <dt>Email</dt><dd>{{ rider.email|default:"—" }}</dd>
+          <dt>Vehicle</dt><dd>{{ profile.get_vehicle_type_display }}</dd>
+          <dt>Plate</dt><dd class="mono">{{ profile.plate|default:"—" }}</dd>
+          <dt>National ID</dt><dd class="mono">{{ profile.national_id|default:"—" }}</dd>
+          <dt>Permit</dt><dd class="mono">{{ profile.permit_number|default:"—" }}</dd>
+          <dt>Reviewed</dt><dd>{{ profile.reviewed_at|daystamp }}</dd>
+          <dt>Reviewed by</dt><dd>{{ profile.reviewed_by.name|default:"—" }}</dd>
+        </dl>
+        {% if profile.reject_reason %}
+        <div class="divider"></div>
+        <div class="small dim">Review note</div>
+        <div class="small">{{ profile.reject_reason }}</div>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Actions</h2>
+          <div class="card-sub">Every change is written to the security log</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="form-card">
+          {% if profile.status == "pending" or profile.status == "rejected" %}
+          <form method="post" action="{% url 'console:rider_action' profile.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <input type="hidden" name="action" value="approve">
+            <button class="btn btn-gold btn-block" type="submit">{% icon "check" 16 %} Approve rider</button>
+          </form>
+          {% endif %}
+          {% if profile.status != "suspended" %}
+          <form method="post" action="{% url 'console:rider_action' profile.pk %}" data-confirm="Suspend {{ rider.name }}? They will stop receiving deliveries.">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <input type="hidden" name="action" value="suspend">
+            <input class="input" name="reason" placeholder="Reason (optional)">
+            <button class="btn btn-danger btn-block mt-8" type="submit">{% icon "close" 16 %} Suspend</button>
+          </form>
+          {% else %}
+          <form method="post" action="{% url 'console:rider_action' profile.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <input type="hidden" name="action" value="reinstate">
+            <button class="btn btn-gold btn-block" type="submit">{% icon "refresh" 16 %} Reinstate</button>
+          </form>
+          {% endif %}
+          {% if profile.status == "pending" %}
+          <form method="post" action="{% url 'console:rider_action' profile.pk %}" data-confirm="Reject this application?">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <input type="hidden" name="action" value="reject">
+            <input class="input" name="reason" placeholder="Reason shown to the rider">
+            <button class="btn btn-danger btn-block mt-8" type="submit">Reject application</button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    {% if active_order %}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">On a delivery</h2>
+          <div class="card-sub">{{ active_order.number }} · {{ active_order.get_status_display }}</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="feed">
+          <div class="feed-item" style="border:0;padding-top:0">
+            <span class="avatar gold">{{ active_order.customer.initials }}</span>
+            <div class="feed-main">
+              <div class="feed-title">{{ active_order.customer.name }}</div>
+              <div class="feed-sub">{{ active_order.delivery_address }}</div>
+            </div>
+          </div>
+        </div>
+        <a class="btn btn-ghost btn-block mt-16" href="{% url 'console:order_detail' active_order.pk %}">Open order</a>
+      </div>
+    </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

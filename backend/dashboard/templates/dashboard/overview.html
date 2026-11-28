@@ -1,0 +1,491 @@
+{% extends "dashboard/base.html" %}
+{% load static fc %}
+{% block title %}Overview · FuelOnDemand Operations{% endblock %}
+
+{% block topbar_lead %}
+<div class="hello">
+  <h1 class="hello-title">
+    {{ greeting }}, {{ first_name }}<span class="hello-spark">{% icon "spark" 17 "2" %}</span>
+  </h1>
+  <p class="hello-sub">Here's what's happening across your fuel network today.</p>
+</div>
+{% endblock %}
+
+{% block topbar_tools %}
+<button class="icon-btn" type="button" data-fullscreen aria-label="Toggle full screen" title="Full screen">
+  {% icon "expand" %}
+</button>
+<a class="icon-btn" href="{% url 'console:notifications' %}" aria-label="Alerts" title="Notifications">
+  {% icon "bell" %}
+  {% if alert_notifications %}<span class="dot"></span>{% endif %}
+</a>
+<a class="icon-btn" href="{% url 'console:settings' %}" aria-label="Settings and permissions" title="Settings &amp; permissions">
+  {% icon "settings" %}
+</a>
+<span class="date-chip">{% icon "clock" 14 %}{{ today_label }}</span>
+{% endblock %}
+
+{% block content %}
+{% if announcement %}
+<div class="banner">
+  {% icon "spark" 15 %}
+  <div><b>Operations notice</b><span>{{ announcement }}</span></div>
+  <a class="card-link" href="{% url 'console:settings' %}">Edit</a>
+</div>
+{% endif %}
+
+<!-- ---------------------------------------------------------------- KPIs -->
+<div class="kpi-row">
+  <article class="stat tone-blue">
+    <div class="stat-top">
+      <span class="stat-label">Total orders</span>
+      <span class="stat-badge">{% icon "orders" 17 %}</span>
+    </div>
+    <div class="stat-value" data-pulse="orders">{{ kpi.orders.display }}</div>
+    <div class="stat-foot">
+      <span class="stat-delta {{ kpi.orders.delta|delta_class }}" data-delta="orders"><i></i>{{ kpi.orders.delta|pct_signed }}</span>
+      <span class="stat-hint">vs yesterday</span>
+    </div>
+  </article>
+
+  <article class="stat tone-green">
+    <div class="stat-top">
+      <span class="stat-label">Delivered</span>
+      <span class="stat-badge">{% icon "check" 17 %}</span>
+    </div>
+    <div class="stat-value" data-pulse="delivered">{{ kpi.delivered.display }}</div>
+    <div class="stat-foot">
+      <span class="stat-delta {{ kpi.delivered.delta|delta_class }}" data-delta="delivered"><i></i>{{ kpi.delivered.delta|pct_signed }}</span>
+      <span class="stat-hint">vs yesterday</span>
+    </div>
+  </article>
+
+  <article class="stat tone-amber">
+    <div class="stat-top">
+      <span class="stat-label">In transit</span>
+      <span class="stat-badge">{% icon "bike" 17 %}</span>
+    </div>
+    <div class="stat-value" data-pulse="active">{{ kpi.active.display }}</div>
+    <div class="stat-foot">
+      <span class="stat-live"><span class="pulse-dot"></span> Live now</span>
+      <span class="stat-hint">{{ kpi.active.hint }}</span>
+    </div>
+  </article>
+
+  <article class="stat tone-violet">
+    <div class="stat-top">
+      <span class="stat-label">On-time delivery</span>
+      <span class="stat-badge">{% icon "clock" 17 %}</span>
+    </div>
+    <div class="stat-value" data-pulse="on_time">{{ kpi.on_time.display }}</div>
+    <div class="stat-foot">
+      <span class="stat-delta {{ kpi.on_time.delta|delta_class }}" data-delta="on_time"><i></i>{{ kpi.on_time.delta|pct_signed }}</span>
+      <span class="stat-hint">vs yesterday</span>
+    </div>
+  </article>
+
+  <article class="stat tone-gold hero">
+    <div class="stat-top">
+      <span class="stat-label">Revenue today</span>
+      <span class="stat-badge">{% icon "wallet" 17 %}</span>
+    </div>
+    <div class="stat-value" data-pulse="revenue">{{ kpi.revenue.display }}</div>
+    <div class="stat-foot">
+      <span class="stat-delta {{ kpi.revenue.delta|delta_class }}" data-delta="revenue"><i></i>{{ kpi.revenue.delta|pct_signed }}</span>
+      <span class="stat-hint">vs yesterday</span>
+    </div>
+  </article>
+</div>
+
+<!-- ---------------------------------------------------------------- shell -->
+<div class="dash-shell">
+  <div class="dash-main">
+    <div class="dash-row-a">
+      <section class="panel chart-panel">
+        <header class="panel-head">
+          <div>
+            <h2 class="panel-title">Operational overview</h2>
+            <p class="panel-sub">Revenue and order flow · {{ period_label|lower }}</p>
+          </div>
+          <div class="panel-tools">
+            <div class="seg">
+              {% for p in period_options %}
+              <a class="{% if p.on %}on{% endif %}" href="?days={{ p.key }}">{{ p.label }}</a>
+              {% endfor %}
+            </div>
+          </div>
+        </header>
+        <div class="panel-body">
+          <div class="chart-wrap" data-chart="line" data-source="chart-series"
+               data-height="236" data-fill="1" data-value-key="revenue" data-secondary="orders"></div>
+          <div class="panel-legend">
+            <span class="lg"><i style="background:var(--gold)"></i>Revenue (UGX)</span>
+            <span class="lg"><i style="background:var(--teal)"></i>Orders placed</span>
+            <span class="lg push">Best day <b>{{ summary.best_label }}</b> · <b>{{ summary.best_revenue|short }}</b></span>
+          </div>
+          <div class="stat-strip">
+            <div class="stat-tile"><span class="k">Revenue</span><span class="v">{{ summary.revenue_total|short }}</span></div>
+            <div class="stat-tile"><span class="k">Orders</span><span class="v">{{ summary.orders_total }}</span></div>
+            <div class="stat-tile"><span class="k">Avg / day</span><span class="v">{{ summary.avg_daily|short }}</span></div>
+            <div class="stat-tile"><span class="k">Avg order</span><span class="v">{{ summary.avg_order|money }}</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel map-panel">
+        <header class="panel-head">
+          <div>
+            <h2 class="panel-title">Live map tracking</h2>
+            <p class="panel-sub">Kampala network · refreshed <b data-updated>just now</b></p>
+          </div>
+          <span class="chip ok plain"><span class="pulse-dot"></span> Live</span>
+        </header>
+        <div class="map-wrap">
+          <div data-map aria-label="Live rider and delivery map"></div>
+
+          <div class="map-controls" aria-label="Map zoom">
+            <button class="map-ctl" type="button" data-map-zoom="in" aria-label="Zoom in">{% icon "plus" 15 %}</button>
+            <button class="map-ctl" type="button" data-map-zoom="out" aria-label="Zoom out">{% icon "minus" 15 %}</button>
+            <span class="map-ctl-sep"></span>
+            <button class="map-ctl" type="button" data-map-reset aria-label="Recentre map">{% icon "locate" 15 %}</button>
+          </div>
+
+          {% if live %}
+          {% with spot=live.0 %}
+          <a class="map-spot" href="{% url 'console:order_detail' spot.id %}">
+            <div class="spot-top">
+              <span class="mono tiny">{{ spot.number }}</span>
+              <span class="chip {{ spot.status|status_tone }}">{{ spot.status_label }}</span>
+            </div>
+            <div class="spot-driver">
+              <span class="avatar">{{ spot.customer_initials }}</span>
+              <div class="spot-main">
+                <div class="spot-name">{{ spot.customer }}</div>
+                <div class="spot-sub">{{ spot.rider|default:"Awaiting rider" }} · {{ spot.fuel }}</div>
+              </div>
+            </div>
+            <div class="spot-foot">
+              <span class="eta"><span class="pulse-dot"></span> ETA {{ spot.eta }} min</span>
+              <span class="strong small">{{ spot.total|money }}</span>
+            </div>
+          </a>
+          {% endwith %}
+          {% endif %}
+
+          <div class="map-legend">
+            <span><i style="background:var(--gold)"></i>Station</span>
+            <span><i style="background:var(--green)"></i>Rider online</span>
+            <span><i style="background:rgba(245,199,46,.6)"></i>Delivery</span>
+            <span><i style="background:#7d838a"></i>Idle</span>
+          </div>
+        </div>
+        <div class="map-foot">
+          <span class="map-chip"><b data-pulse="online-riders">{{ riders|length }}</b> riders</span>
+          <span class="map-chip"><b data-pulse="active-orders">{{ live|length }}</b> in transit</span>
+          <a class="card-link" href="{% url 'console:live' %}">Open board ↗</a>
+        </div>
+      </section>
+    </div>
+
+    <div class="dash-row-b">
+      <section class="panel donut-panel">
+        <header class="panel-head">
+          <div>
+            <h2 class="panel-title">Order status distribution</h2>
+            <p class="panel-sub">Last 7 days</p>
+          </div>
+          <a class="card-link" href="{% url 'console:orders' %}">All orders ↗</a>
+        </header>
+        <div class="panel-body">
+          <div class="donut-layout">
+            <div class="donut">
+              <div data-chart="donut" data-source="chart-statuses" data-value-key="count"></div>
+              <div class="donut-center">
+                <b data-donut-total>{{ status_total }}</b>
+                <span>Orders</span>
+              </div>
+            </div>
+            <div class="donut-legend">
+              {% for s in chart_statuses %}
+              <div class="donut-row">
+                <span class="legend-swatch" style="background:{{ s.color }}"></span>
+                <span class="name">{{ s.label }}</span>
+                <span class="tiny dim">{{ s.count|pct:status_total }}%</span>
+                <span class="val">{{ s.count }}</span>
+              </div>
+              {% empty %}
+              <div class="empty">No orders in this window.</div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-head">
+          <div>
+            <h2 class="panel-title">Top performing riders</h2>
+            <p class="panel-sub">Completed deliveries · all time</p>
+          </div>
+          <a class="card-link" href="{% url 'console:riders' %}">Fleet ↗</a>
+        </header>
+        <div class="panel-body tight">
+          <div class="perf">
+            {% for r in top_riders %}
+            <a class="perf-row" href="{% url 'console:riders' %}">
+              <span class="perf-rank {% if forloop.counter <= 3 %}top{% endif %}">{{ forloop.counter }}</span>
+              <span class="avatar">{{ r.name|initials }}</span>
+              <div class="perf-main">
+                <div class="perf-name">{{ r.name }}</div>
+                <div class="perf-sub">
+                  <span class="mono">{{ r.plate|default:"no plate" }}</span>
+                  {% if r.rating %}<span class="star">{% icon "star" 10 %}{{ r.rating|floatformat:1 }}</span>{% endif %}
+                </div>
+              </div>
+              <div class="perf-num">
+                <b>{{ r.deliveries }}</b>
+                <span>{{ r.payout|short }}</span>
+              </div>
+              <span class="perf-go">{% icon "arrow" 12 %}</span>
+            </a>
+            {% empty %}
+            <div class="empty">No completed deliveries yet.</div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header class="panel-head">
+          <div>
+            <h2 class="panel-title">Revenue analytics</h2>
+            <p class="panel-sub">{{ period_label }} · paid orders</p>
+          </div>
+          <span class="tag">UGX</span>
+        </header>
+        <div class="panel-body">
+          <div class="rev-head">
+            <div>
+              <div class="rev-value">{{ summary.revenue_total|short }}</div>
+              <div class="stat-hint">
+                <span class="stat-delta {{ summary.revenue_delta|delta_class }}"><i></i>{{ summary.revenue_delta|pct_signed }}</span>
+                vs previous {{ days }} days
+              </div>
+            </div>
+            <div class="rev-meta">
+              {{ summary.orders_total }} orders<br>{{ summary.avg_order|money }} avg
+            </div>
+          </div>
+          <div class="vchart">
+            {% for d in chart_series %}
+            <div class="vbar" title="{{ d.label }} · {{ d.revenue|money }}">
+              <i style="height:{{ d.pct }}%"></i>
+              {% if forloop.counter0|divisibleby:2 %}<em>{{ d.label|slice:":2" }}</em>{% else %}<em>&nbsp;</em>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          <div class="vchart-foot">
+            <span class="tiny dim">{{ chart_series.0.label }} → {{ summary.best_label }}</span>
+            <span class="tiny dim">Peak {{ summary.best_revenue|short }}</span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <aside class="dash-rail">
+    <section class="panel rail-panel">
+      <header class="panel-head">
+        <div>
+          <h2 class="panel-title">Live operations</h2>
+          <p class="panel-sub">Deliveries moving right now</p>
+        </div>
+        <a class="card-link" href="{% url 'console:live' %}">Board ↗</a>
+      </header>
+      <div class="panel-body tight">
+        <div class="op-list" data-live-orders>
+          {% for o in live %}
+          <a class="op-row" href="{% url 'console:order_detail' o.id %}">
+            <span class="op-icon {{ o.status|tone_class }}">{% icon "orders" 16 %}</span>
+            <div class="op-main">
+              <div class="op-title">{{ o.number }}</div>
+              <div class="op-sub">{{ o.customer }} · {{ o.fuel }}</div>
+            </div>
+            <div class="op-meta">
+              <span class="chip {{ o.status|status_tone }}">{{ o.status_label }}</span>
+              <span class="op-time">{{ o.age_minutes }}m</span>
+            </div>
+          </a>
+          {% empty %}
+          <div class="empty">No deliveries in progress.</div>
+          {% endfor %}
+        </div>
+      </div>
+      <footer class="panel-foot">
+        <span class="live-tag"><span class="pulse-dot"></span> Live</span>
+        <span class="tiny dim"><b data-pulse="online-riders">{{ riders|length }}</b> riders online</span>
+      </footer>
+    </section>
+
+    <section class="panel rail-panel">
+      <header class="panel-head">
+        <div>
+          <h2 class="panel-title">Automation workflows</h2>
+          <p class="panel-sub">Background jobs running</p>
+        </div>
+        <a class="card-link" href="{% url 'console:settings' %}">View all</a>
+      </header>
+      <div class="panel-body tight">
+        <div class="wf-list">
+          {% for a in automation %}
+          <a class="wf-row" href="{{ a.url }}">
+            <span class="wf-dot {% if a.on %}on{% else %}off{% endif %}"></span>
+            <div class="wf-main">
+              <div class="wf-title">{{ a.title }}</div>
+              <div class="wf-sub">{{ a.meta }}</div>
+            </div>
+            <span class="wf-switch {% if a.on %}on{% endif %}" aria-hidden="true"><i></i></span>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <section class="panel rail-panel">
+      <header class="panel-head">
+        <div>
+          <h2 class="panel-title">Quick actions</h2>
+          <p class="panel-sub">Jump straight into the work</p>
+        </div>
+      </header>
+      <div class="panel-body">
+        <div class="quick-grid">
+          <a class="quick tone-gold" href="{% url 'console:reports' %}">
+            <span class="qi">{% icon "report" 15 %}</span>
+            <b>Reports</b>
+            <span>Daily &amp; CSV</span>
+          </a>
+          <a class="quick tone-blue" href="{% url 'console:notifications' %}">
+            <span class="qi">{% icon "bell" 15 %}</span>
+            <b>Broadcast</b>
+            <span>Message users</span>
+          </a>
+          <a class="quick tone-green" href="{% url 'console:riders' %}?status=pending">
+            <span class="qi">{% icon "check" 15 %}</span>
+            <b>Approve riders</b>
+            <span>{{ alert_riders }} waiting</span>
+          </a>
+          <a class="quick tone-violet" href="{% url 'console:tankers' %}">
+            <span class="qi">{% icon "fuel" 15 %}</span>
+            <b>Dispatch tanker</b>
+            <span>{{ kpi.tankers.display }} on road</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </aside>
+
+  <!-- -------------------------------------------------------------- network -->
+  <div class="dash-row-c">
+  <section class="panel donut-panel">
+    <header class="panel-head">
+      <div>
+        <h2 class="panel-title">Fuel mix</h2>
+        <p class="panel-sub">Litres demand · 7 days</p>
+      </div>
+      <span class="tag">{{ kpi.stations.display }} stations</span>
+    </header>
+    <div class="panel-body">
+      <div class="donut-layout">
+        <div class="donut sm">
+          <div data-chart="donut" data-source="chart-fuel" data-value-key="count"></div>
+          <div class="donut-center">
+            <b data-donut-total>—</b>
+            <span>Orders</span>
+          </div>
+        </div>
+        <div class="donut-legend">
+          {% for f in chart_fuel %}
+          <div class="donut-row">
+            <span class="legend-swatch" style="background:{{ f.color }}"></span>
+            <span class="name">{{ f.label }}</span>
+            <span class="tiny dim">{{ f.share }}%</span>
+            <span class="val">{{ f.litres|floatformat:0 }} L</span>
+          </div>
+          {% empty %}
+          <div class="empty">No fuel sales yet.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel donut-panel">
+    <header class="panel-head">
+      <div>
+        <h2 class="panel-title">Payment channels</h2>
+        <p class="panel-sub">How customers pay · 7 days</p>
+      </div>
+      <a class="card-link" href="{% url 'console:payments' %}">Ledger ↗</a>
+    </header>
+    <div class="panel-body">
+      <div class="donut-layout">
+        <div class="donut sm">
+          <div data-chart="donut" data-source="chart-payments" data-value-key="count"></div>
+          <div class="donut-center">
+            <b data-donut-total>{{ payment_total }}</b>
+            <span>Payments</span>
+          </div>
+        </div>
+        <div class="donut-legend">
+          {% for p in chart_payments %}
+          <div class="donut-row">
+            <span class="legend-swatch" style="background:{{ p.color }}"></span>
+            <span class="name">{{ p.label }}</span>
+            <span class="tiny dim">{{ p.count|pct:payment_total }}%</span>
+            <span class="val">{{ p.count }}</span>
+          </div>
+          {% empty %}
+          <div class="empty">No payments yet.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <header class="panel-head">
+      <div>
+        <h2 class="panel-title">Top stations</h2>
+        <p class="panel-sub">Revenue · 7 days</p>
+      </div>
+      <a class="card-link" href="{% url 'console:stations' %}">Network ↗</a>
+    </header>
+    <div class="panel-body">
+      <div class="bars">
+        {% for s in chart_stations %}
+        <div class="bar-row">
+          <span class="bar-label">{{ s.name }}</span>
+          <span class="bar-value">{{ s.revenue|money }}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:{{ s.share }}%"></div></div>
+        </div>
+        {% empty %}
+        <div class="empty">No station revenue in this window.</div>
+        {% endfor %}
+      </div>
+      <div class="network-foot">
+        <span>{{ kpi.tankers.display }} tankers on road</span>
+        <span>{{ kpi.customers.display }} new customers</span>
+        <span>{{ portfolio.customers }} total customers</span>
+      </div>
+    </div>
+  </section>
+  </div>
+</div>
+
+{{ chart_series|json_script:"chart-series" }}
+{{ chart_statuses|json_script:"chart-statuses" }}
+{{ chart_fuel|json_script:"chart-fuel" }}
+{{ chart_payments|json_script:"chart-payments" }}
+<script type="application/json" id="map-seed">{{ map_seed|safe }}</script>
+{% endblock %}

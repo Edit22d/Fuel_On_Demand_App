@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'data.dart';
 import 'icons.dart';
+import 'map_style.dart';
 import 'theme.dart';
 
 enum Screen {
@@ -13,58 +14,6 @@ enum Screen {
   riderRegistration, riderLogin, riderDashboard, riderDeliveries, riderRequest,
   riderDecision, riderNavigation, riderPickup, riderDelivery, riderEarnings,
 }
-
-class MenuEntry {
-  final Screen screen;
-  final String label;
-  const MenuEntry(this.screen, this.label);
-}
-
-/// Items of the top-right menu (same list as the original prototype navigator,
-/// plus the new password screen).
-const kMenuEntries = [
-  MenuEntry(Screen.splash, 'Splash'),
-  MenuEntry(Screen.onboarding, 'Onboarding'),
-  MenuEntry(Screen.login, 'Sign in'),
-  MenuEntry(Screen.signup, 'Create account'),
-  MenuEntry(Screen.forgot, 'Reset password'),
-  MenuEntry(Screen.otp, 'Verification'),
-  MenuEntry(Screen.newPassword, 'New password'),
-  MenuEntry(Screen.locationAccess, 'Location access'),
-  MenuEntry(Screen.home, 'Home'),
-  MenuEntry(Screen.partners, 'Partner stations'),
-  MenuEntry(Screen.station, 'Station'),
-  MenuEntry(Screen.fuel, 'Select fuel'),
-  MenuEntry(Screen.vehicle, 'Select vehicle'),
-  MenuEntry(Screen.checkout, 'Delivery'),
-  MenuEntry(Screen.payment, 'Payment'),
-  MenuEntry(Screen.tracking, 'Live tracking'),
-  MenuEntry(Screen.success, 'Completed'),
-  MenuEntry(Screen.orders, 'Orders'),
-  MenuEntry(Screen.orderDetail, 'Order details'),
-  MenuEntry(Screen.wallet, 'Wallet'),
-  MenuEntry(Screen.rewards, 'Rewards'),
-  MenuEntry(Screen.notifications, 'Notifications'),
-  MenuEntry(Screen.profile, 'Settings'),
-  MenuEntry(Screen.addresses, 'Saved places'),
-  MenuEntry(Screen.vehicles, 'My vehicles'),
-  MenuEntry(Screen.support, 'Help centre'),
-  MenuEntry(Screen.safety, 'Safety centre'),
-  MenuEntry(Screen.orderConfirmation, 'Order confirmed'),
-  MenuEntry(Screen.cancelOrder, 'Cancel order'),
-  MenuEntry(Screen.editProfile, 'Edit profile'),
-  MenuEntry(Screen.appSettings, 'App settings'),
-  MenuEntry(Screen.riderRegistration, 'Rider registration'),
-  MenuEntry(Screen.riderLogin, 'Rider login'),
-  MenuEntry(Screen.riderDashboard, 'Rider dashboard'),
-  MenuEntry(Screen.riderDeliveries, 'Available deliveries'),
-  MenuEntry(Screen.riderRequest, 'Delivery request'),
-  MenuEntry(Screen.riderDecision, 'Accept or reject'),
-  MenuEntry(Screen.riderNavigation, 'Navigate to customer'),
-  MenuEntry(Screen.riderPickup, 'Confirm pickup'),
-  MenuEntry(Screen.riderDelivery, 'Confirm delivery'),
-  MenuEntry(Screen.riderEarnings, 'Rider earnings'),
-];
 
 class AppState extends ChangeNotifier {
   // ----- navigation --------------------------------------------------------
@@ -105,6 +54,51 @@ class AppState extends ChangeNotifier {
   bool pushOn = true;
   bool locationOn = true;
 
+  /// Last GPS fix taken by the app (null until the device answers).
+  double? lat, lng;
+  DateTime? locatedAt;
+  bool locating = false;
+
+  /// Delivery pin — set from GPS, the map, or a saved place.
+  double? deliveryLat, deliveryLng;
+
+  LatLng? get geoPoint => (lat == null || lng == null) ? null : LatLng(lat!, lng!);
+  LatLng? get deliveryPoint =>
+      (deliveryLat == null || deliveryLng == null) ? null : LatLng(deliveryLat!, deliveryLng!);
+
+  /// Origin used when there is no GPS fix yet (Kampala city centre).
+  LatLng get fallbackPoint => geoPoint ?? MapConfig.kampala;
+
+  void setGeo(double la, double ln, {String? label}) {
+    lat = la;
+    lng = ln;
+    locatedAt = DateTime.now();
+    if (label != null && label.trim().isNotEmpty) location = label.trim();
+    deliveryLat ??= la;
+    deliveryLng ??= ln;
+    notifyListeners();
+  }
+
+  void setDeliveryPoint(double la, double ln, {String? address}) {
+    deliveryLat = la;
+    deliveryLng = ln;
+    if (address != null && address.trim().isNotEmpty) deliveryAddress = address.trim();
+    notifyListeners();
+  }
+
+  // ----- live order --------------------------------------------------------
+  /// Id of the order the customer is tracking (also used by the orders list).
+  String? activeOrderId;
+  String get orderIdLabel => activeOrderId ?? '—';
+
+  /// Local reference for a brand new order. The backend returns the canonical
+  /// id (`POST /orders`) and tracking swaps to it automatically.
+  String newOrderId() {
+    final n = DateTime.now().millisecondsSinceEpoch % 900000;
+    activeOrderId = 'FC-${100000 + n}';
+    return activeOrderId!;
+  }
+
   // ----- theme -------------------------------------------------------------
   ThemeMode themeMode = ThemeMode.dark;
   bool get isDark => themeMode == ThemeMode.dark;
@@ -130,7 +124,7 @@ class AppState extends ChangeNotifier {
   TimeOfDay? scheduledAt;
   String deliveryAddress = 'Acacia Mall, Kisementi';
   String deliveryNote = '';
-  String payId = 'visa';
+  String payId = 'airtel';
   bool stationSaved = false;
 
   int get fuelTotal => litres * prices[fuelType]!;
@@ -152,11 +146,10 @@ class AppState extends ChangeNotifier {
     const Place('Gym', 'Acacia Mall, Kisementi'),
   ];
 
+  // Demo merchant codes: replace with your real ones when you have them.
   final List<PayMethod> payMethods = [
-    const PayMethod(id: 'momo', title: 'MTN Mobile Money', caption: '+256 700 ••• 456', badge: 'MTN', badgeBg: Color(0xFFFFCB05), badgeFg: Color(0xFF171717)),
-    const PayMethod(id: 'airtel', title: 'Airtel Money', caption: 'Add an Airtel number', badge: 'A', badgeBg: Color(0xFFE9222B), badgeFg: Colors.white),
-    const PayMethod(id: 'visa', title: 'Visa ending 4242', caption: 'Expires 08/28', badge: 'VISA'),
-    const PayMethod(id: 'wallet', title: 'FuelConnect Wallet', caption: '', icon: IconName.wallet),
+    const PayMethod(id: 'airtel', title: 'Airtel Merchant Code', caption: 'Merchant code 123456', badge: 'A', badgeBg: Color(0xFFE9222B), badgeFg: Colors.white),
+    const PayMethod(id: 'mtn', title: 'MTN Merchant Code', caption: 'Merchant code 654321', badge: 'MTN', badgeBg: Color(0xFFFFCB05), badgeFg: Color(0xFF171717)),
     const PayMethod(id: 'cash', title: 'Cash on delivery', caption: 'Pay your delivery partner', icon: IconName.card),
   ];
   PayMethod get selectedPay => payMethods.firstWhere((m) => m.id == payId, orElse: () => payMethods.first);

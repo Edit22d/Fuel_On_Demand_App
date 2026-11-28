@@ -1,0 +1,1 @@
+Flutter >=3.24 with Dart >=3.4; Material Design 3; `flutter_secure_storage` and `shared_preferences` for persistent data; `crypto` (SHA-256) for local password hashing; `google_fonts` and `flutter_svg` for assets; `url_launcher` for external links; linting via `flutter_lints`.

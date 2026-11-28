@@ -1,0 +1,1 @@
+NestJS 11 + Express, Prisma 6 with PostgreSQL/PostGIS, ioredis + @socket.io/redis-adapter for WebSocket scaling, JWT (passport-jwt) for bearer auth, class-validator/class-transformer for DTO validation, Helmet for HTTP headers, Joi for env validation, Socket.IO for real-time tracking, and a static SPA dashboard served directly from `public/dashboard/`.

@@ -1,4 +1,4 @@
-import 'dart:math' as math;
+﻿import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -6,6 +6,7 @@ import 'theme.dart';
 import 'icons.dart';
 import 'data.dart';
 import 'app_state.dart';
+import 'motion.dart';
 
 typedef Go = void Function(Screen screen, {bool root, bool replace});
 
@@ -94,7 +95,14 @@ class _FcButtonState extends State<FcButton> {
         deco = BoxDecoration(
           gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [FC.gold, FC.goldDeep]),
           borderRadius: radius,
-          boxShadow: [BoxShadow(color: al(FC.gold, .12), blurRadius: 32, offset: const Offset(0, 12))],
+          boxShadow: [
+            BoxShadow(
+              color: al(FC.gold, _down ? .30 : .12),
+              blurRadius: _down ? 44 : 32,
+              spreadRadius: _down ? 2 : 0,
+              offset: const Offset(0, 12),
+            ),
+          ],
         );
         break;
       case BV.outline:
@@ -131,7 +139,9 @@ class _FcButtonState extends State<FcButton> {
       content = Row(mainAxisSize: MainAxisSize.min, mainAxisAlignment: MainAxisAlignment.center, children: kids);
     }
 
-    final box = Container(
+    final box = AnimatedContainer(
+      duration: Motion.fast,
+      curve: Motion.out,
       width: isIcon ? 42 : (widget.expand ? double.infinity : null),
       height: isIcon ? 42 : null,
       constraints: isIcon ? null : const BoxConstraints(minHeight: 52),
@@ -252,9 +262,21 @@ class _FcFieldState extends State<FcField> {
                 ),
               ),
               if (widget.password && widget.showToggle)
-                Tap(
-                  onTap: () => setState(() => _hide = !_hide),
-                  child: Padding(padding: const EdgeInsets.only(left: 8), child: Ic(IconName.eye, size: 18, color: _hide ? FC.dim : FC.gold)),
+                // 40px hit target so the eye is easy to tap, and the icon
+                // switches to the struck-through eye while the text is visible.
+                Semantics(
+                  button: true,
+                  label: _hide ? 'Show password' : 'Hide password',
+                  child: Tap(
+                    onTap: () => setState(() => _hide = !_hide),
+                    child: Container(
+                      width: 40,
+                      height: 40,
+                      margin: const EdgeInsets.only(left: 4),
+                      alignment: Alignment.center,
+                      child: Ic(_hide ? IconName.eye : IconName.eyeOff, size: 19, color: _hide ? FC.muted : FC.gold),
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -341,73 +363,6 @@ class Glow extends StatelessWidget {
       });
 }
 
-class _GridPainter extends CustomPainter {
-  final Color bg;
-  final double step;
-  const _GridPainter(this.bg, this.step);
-  @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = bg);
-    final p = Paint()..color = al(FC.overlay, .035);
-    for (double x = 0; x < size.width; x += step) {
-      canvas.drawRect(Rect.fromLTWH(x, 0, 1, size.height), p);
-    }
-    for (double y = 0; y < size.height; y += step) {
-      canvas.drawRect(Rect.fromLTWH(0, y, size.width, 1), p);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _GridPainter old) => old.bg != bg || old.step != step;
-}
-
-class MapGrid extends StatelessWidget {
-  final Color? bg;
-  final double step;
-  const MapGrid({super.key, this.bg, this.step = 28});
-  @override
-  Widget build(BuildContext context) => CustomPaint(painter: _GridPainter(bg ?? FC.mapBg, step), child: const SizedBox.expand());
-}
-
-/// "L" shaped route (left + bottom border) with optional rounded corner/dots.
-class _RoutePainter extends CustomPainter {
-  final double stroke, radius;
-  final bool dotted;
-  const _RoutePainter(this.stroke, this.radius, this.dotted);
-  @override
-  void paint(Canvas canvas, Size s) {
-    final half = stroke / 2;
-    final path = Path()
-      ..moveTo(half, 0)
-      ..lineTo(half, s.height - half - radius)
-      ..quadraticBezierTo(half, s.height - half, half + radius, s.height - half)
-      ..lineTo(s.width, s.height - half);
-    if (!dotted) {
-      canvas.drawPath(path, Paint()..color = FC.gold..style = PaintingStyle.stroke..strokeWidth = stroke);
-      return;
-    }
-    final dot = Paint()..color = FC.gold;
-    for (final m in path.computeMetrics()) {
-      for (double d = half; d < m.length; d += stroke * 2) {
-        final t = m.getTangentForOffset(d);
-        if (t != null) canvas.drawCircle(t.position, half, dot);
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _RoutePainter old) => true;
-}
-
-class RouteLine extends StatelessWidget {
-  final double width, height, stroke, radius;
-  final bool dotted;
-  const RouteLine({super.key, required this.width, required this.height, this.stroke = 4, this.radius = 0, this.dotted = false});
-  @override
-  Widget build(BuildContext context) =>
-      CustomPaint(size: Size(width, height), painter: _RoutePainter(stroke, radius, dotted));
-}
-
 // ---------------------------------------------------------------------------
 // Pills, toggles, small atoms
 // ---------------------------------------------------------------------------
@@ -422,7 +377,8 @@ class VerifiedPill extends StatelessWidget {
         decoration: BoxDecoration(color: al(FC.green, .12), borderRadius: BorderRadius.circular(20)),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           if (check) ...[Ic(IconName.check, size: iconSize, color: FC.green), const SizedBox(width: 5)],
-          Text(text, style: fs(8.96, color: FC.green, w: FontWeight.w700, h: 1.3)),
+          // Shrinks instead of overflowing when a narrow column squeezes the pill.
+          Flexible(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: fs(8.96, color: FC.green, w: FontWeight.w700, h: 1.3))),
         ]),
       );
 }
@@ -432,9 +388,14 @@ class LivePill extends StatelessWidget {
   const LivePill(this.text, {super.key});
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
         decoration: BoxDecoration(color: al(FC.green, .11), borderRadius: BorderRadius.circular(20)),
-        child: Text(text, style: fs(8.32, color: FC.green, w: FontWeight.w800, ls: .42, h: 1.3)),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          PulseDot(color: FC.green, size: 4.5),
+          const SizedBox(width: 2),
+          // Shrinks instead of overflowing when a narrow column squeezes the pill.
+          Flexible(child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: fs(8.32, color: FC.green, w: FontWeight.w800, ls: .42, h: 1.3))),
+        ]),
       );
 }
 
@@ -583,6 +544,9 @@ class PageHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final h = cl(context, 18, 5, 54);
     final top = topInset(context);
+    // Narrow phones can't spare 96px on both sides of the title, so the
+    // reserved side gutters shrink with the screen.
+    final side = cl(context, 62, 8, 96);
     return Container(
       height: 76 + top,
       decoration: BoxDecoration(color: FC.headerBg, border: Border(bottom: BorderSide(color: al(FC.overlay, .06)))),
@@ -590,13 +554,13 @@ class PageHeader extends StatelessWidget {
         Padding(
           padding: EdgeInsets.fromLTRB(h, top, math.max(h, kRightInset), 0),
           child: Row(children: [
-            goBack != null ? FcButton.icon(IconName.arrow, onTap: goBack) : const Logo(compact: true),
+            goBack != null ? FcButton.icon(IconName.arrow, key: const ValueKey('page-back'), onTap: goBack) : const Logo(compact: true),
             const Spacer(),
             if (action != null) action!,
           ]),
         ),
         Padding(
-          padding: EdgeInsets.only(top: top, left: 96, right: 96),
+          padding: EdgeInsets.only(top: top, left: side, right: side),
           child: Center(child: FcText(title, kind: Tx.subtitle, maxLines: 1)),
         ),
       ]),
@@ -615,7 +579,7 @@ const _navItems = [
   _NavItem(Screen.home, IconName.home, 'Home'),
   _NavItem(Screen.partners, IconName.fuel, 'Stations'),
   _NavItem(Screen.orders, IconName.orders, 'Orders'),
-  _NavItem(Screen.wallet, IconName.wallet, 'Wallet'),
+  _NavItem(Screen.support, IconName.phone, 'Support'),
 ];
 
 class BottomNav extends StatelessWidget {
@@ -632,12 +596,12 @@ class BottomNav extends StatelessWidget {
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: wide ? 720 : double.infinity),
         child: ClipRRect(
-          borderRadius: wide ? const BorderRadius.vertical(top: Radius.circular(18)) : BorderRadius.zero,
+          borderRadius: wide ? const BorderRadius.vertical(top: Radius.circular(22)) : BorderRadius.zero,
           child: BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 11, sigmaY: 11),
+            filter: ui.ImageFilter.blur(sigmaX: 14, sigmaY: 14),
             child: Container(
-              height: 72 + inset,
-              padding: EdgeInsets.fromLTRB(padH, 5, padH, 5 + inset),
+              height: 74 + inset,
+              padding: EdgeInsets.fromLTRB(padH, 6, padH, 6 + inset),
               decoration: BoxDecoration(
                 color: FC.navBg,
                 border: Border(
@@ -650,14 +614,7 @@ class BottomNav extends StatelessWidget {
                 children: [
                   for (final i in _navItems)
                     Expanded(
-                      child: Tap(
-                        onTap: () => go(i.screen, root: true),
-                        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Ic(i.icon, size: 19, color: current == i.screen ? FC.gold : FC.dim),
-                          const SizedBox(height: 4),
-                          Text(i.label, style: fs(8.64, color: current == i.screen ? FC.gold : FC.dim, h: 1.2)),
-                        ]),
-                      ),
+                      child: _NavButton(item: i, active: current == i.screen, onTap: () => go(i.screen, root: true)),
                     ),
                 ],
               ),
@@ -667,6 +624,55 @@ class BottomNav extends StatelessWidget {
       ),
     );
   }
+}
+
+class _NavButton extends StatelessWidget {
+  final _NavItem item;
+  final bool active;
+  final VoidCallback onTap;
+  const _NavButton({required this.item, required this.active, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        button: true,
+        selected: active,
+        label: item.label,
+        child: Pressable(
+          onTap: onTap,
+          scale: .93,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: Motion.base,
+                curve: Motion.soft,
+                width: active ? 46 : 34,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: active ? al(FC.gold, .12) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: active ? al(FC.gold, .30) : Colors.transparent),
+                ),
+                child: Center(
+                  child: AnimatedScale(
+                    scale: active ? 1.02 : 1,
+                    duration: Motion.base,
+                    curve: Motion.soft,
+                    child: Ic(item.icon, size: 19, color: active ? FC.gold : FC.dim),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              AnimatedDefaultTextStyle(
+                duration: Motion.base,
+                curve: Motion.soft,
+                style: fs(8.64, color: active ? FC.gold : FC.dim, w: active ? FontWeight.w700 : FontWeight.w400, h: 1.2),
+                child: Text(item.label),
+              ),
+            ],
+          ),
+        ),
+      );
 }
 
 /// Scrollable page with optional header and fixed bottom navigation.
@@ -815,118 +821,12 @@ class TotalRow extends StatelessWidget {
           border: Border(top: BorderSide(color: FC.line)),
         ),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(label, style: fs(13.6, color: FC.ink)),
-          Text(value, style: fs(13.6, color: FC.ink, w: FontWeight.w700)),
+          Expanded(child: Text(label, style: fs(13.6, color: FC.ink))),
+          const SizedBox(width: 16),
+          // Long amounts shrink rather than pushing the label off a phone screen.
+          Flexible(child: Text(value, textAlign: TextAlign.right, style: fs(13.6, color: FC.ink, w: FontWeight.w700))),
         ]),
       );
-}
-
-// ---------------------------------------------------------------------------
-// Station + partner widgets
-// ---------------------------------------------------------------------------
-class PartnerMonogram extends StatelessWidget {
-  final Partner p;
-  final double size;
-  final double font;
-  const PartnerMonogram(this.p, {super.key, this.size = 44, this.font = 16});
-  @override
-  Widget build(BuildContext context) => Container(
-        width: size,
-        height: size,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: toneColor(p.tone),
-          gradient: p.tone == 'total' ? kTotalGradient : null,
-          borderRadius: BorderRadius.circular(9),
-        ),
-        child: Text(p.name.substring(0, 1), style: fs(font, color: p.tone == 'shell' ? FC.onGold : Colors.white, w: FontWeight.w900, h: 1)),
-      );
-}
-
-class PartnerChip extends StatelessWidget {
-  final Partner p;
-  final VoidCallback onTap;
-  const PartnerChip(this.p, {super.key, required this.onTap});
-  @override
-  Widget build(BuildContext context) => Tap(
-        onTap: onTap,
-        child: Container(
-          constraints: const BoxConstraints(minWidth: 92, minHeight: 66),
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: toneColor(p.tone) ?? FC.surface,
-            gradient: p.tone == 'total' ? kTotalGradient : null,
-            borderRadius: BorderRadius.circular(13),
-            border: Border.all(color: FC.line),
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Text(p.name.substring(0, 1), style: fs(11.52, color: Colors.white, w: FontWeight.w900, h: 1)),
-            const SizedBox(width: 8),
-            Text(p.name, style: fs(9.28, color: p.tone == 'shell' ? FC.onGold : FC.ink, w: FontWeight.w700)),
-          ]),
-        ),
-      );
-}
-
-class StationCard extends StatelessWidget {
-  final Station s;
-  final VoidCallback onTap;
-  const StationCard(this.s, {super.key, required this.onTap});
-
-  Widget _tag(String t) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-        decoration: BoxDecoration(color: FC.tagBg, borderRadius: BorderRadius.circular(20)),
-        child: Text(t, style: fs(8.8, color: FC.tagText, h: 1.3)),
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    final frac = vw(context) <= 380 ? .34 : .38;
-    return Tap(
-      onTap: onTap,
-      child: Container(
-        clipBehavior: Clip.antiAlias,
-        constraints: const BoxConstraints(minHeight: 158),
-        decoration: BoxDecoration(color: FC.surface, borderRadius: BorderRadius.circular(18), border: Border.all(color: FC.line)),
-        child: LayoutBuilder(builder: (c, cons) {
-          final imgW = cons.maxWidth * frac;
-          return Stack(children: [
-            Positioned(left: 0, top: 0, bottom: 0, width: imgW, child: Image.asset(s.image, fit: BoxFit.cover)),
-            Padding(
-              padding: EdgeInsets.only(left: imgW),
-              child: Padding(
-                padding: const EdgeInsets.all(15),
-                child: Stack(clipBehavior: Clip.none, children: [
-                  Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-                    Text(s.brand, style: fs(8, color: FC.gold, w: FontWeight.w900, ls: .96)),
-                    const SizedBox(height: 5),
-                    Padding(padding: const EdgeInsets.only(right: 36), child: FcText(s.name, kind: Tx.subtitle)),
-                    const SizedBox(height: 8),
-                    Row(mainAxisSize: MainAxisSize.min, children: [
-                      Ic(IconName.location, size: 13, color: FC.muted),
-                      const SizedBox(width: 4),
-                      Flexible(child: Text('${s.distance} · ${s.eta}', style: fs(11.52, color: FC.muted))),
-                    ]),
-                    const SizedBox(height: 14),
-                    Wrap(spacing: 6, runSpacing: 6, children: [_tag('Petrol 5,180'), _tag('Diesel 4,960')]),
-                  ]),
-                  Positioned(
-                    top: 17,
-                    right: 0,
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Ic(IconName.star, size: 13, color: FC.gold),
-                      const SizedBox(width: 4),
-                      Text(s.rating, style: fs(9.92, color: FC.gold)),
-                    ]),
-                  ),
-                ]),
-              ),
-            ),
-          ]);
-        }),
-      ),
-    );
-  }
 }
 
 // ---------------------------------------------------------------------------

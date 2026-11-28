@@ -1,0 +1,150 @@
+{% extends "dashboard/base.html" %}
+{% load static fc %}
+{% block title %}{{ ticket.subject }} · Support · FuelOnDemand{% endblock %}
+
+{% block content %}
+<div class="detail-head">
+  <span class="avatar lg">{{ ticket.customer.initials }}</span>
+  <div class="grow">
+    <div class="eyebrow">{{ ticket.reference }} · {{ ticket.created_at|daystamp }}</div>
+    <div class="detail-title">{{ ticket.subject }}</div>
+    <div class="chip-row">
+      <span class="chip {{ ticket.priority|status_tone }}">{{ ticket.get_priority_display }} priority</span>
+      <span class="chip plain {{ ticket.status|status_tone }}">{{ ticket.get_status_display }}</span>
+      <span class="chip muted plain">{{ ticket.customer.name }}</span>
+    </div>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-ghost" href="{% url 'console:support' %}">{% icon "arrow" 16 %} Inbox</a>
+    <a class="btn btn-gold" href="{% url 'console:customer_detail' ticket.customer.pk %}">{% icon "customers" 16 %} Customer</a>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="stack-16">
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Conversation</h2>
+          <div class="card-sub">What the customer wrote</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="feed-item" style="border:0;padding-top:0">
+          <span class="avatar gold">{{ ticket.customer.initials }}</span>
+          <div class="feed-main">
+            <div class="feed-title">{{ ticket.customer.name }}</div>
+            <div class="feed-sub mono">{{ ticket.customer.phone }} · {{ ticket.created_at|daystamp }}</div>
+          </div>
+        </div>
+        <p class="small" style="white-space:pre-wrap;line-height:1.65">{{ ticket.message }}</p>
+
+        {% if ticket.reply %}
+        <div class="divider"></div>
+        <div class="feed-item" style="border:0;padding-top:0">
+          <span class="avatar">FC</span>
+          <div class="feed-main">
+            <div class="feed-title">Operations reply</div>
+            <div class="feed-sub">{{ ticket.assignee.name|default:"Support" }} · {{ ticket.updated_at|daystamp }}</div>
+          </div>
+        </div>
+        <p class="small" style="white-space:pre-wrap;line-height:1.65">{{ ticket.reply }}</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Reply</h2>
+          <div class="card-sub">Send a response and move the ticket along</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <form class="form-card" method="post" action="{% url 'console:support_reply' ticket.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.path }}">
+          <div class="field">
+            <label class="label" for="reply">Message</label>
+            <textarea class="textarea" id="reply" name="reply" placeholder="Hi {{ ticket.customer.first_name }}, thanks for reaching out…" required></textarea>
+          </div>
+          <div class="field">
+            <label class="label" for="status">Set status</label>
+            <select class="select" id="status" name="status">
+              {% for value, label in statuses %}
+                <option value="{{ value }}" {% if ticket.status == value %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <button class="btn btn-gold" type="submit">{% icon "arrow" 16 %} Send reply</button>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <div class="stack-16">
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Ticket</h2>
+          <div class="card-sub">Metadata</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <dl class="kv">
+          <dt>Reference</dt><dd class="mono">{{ ticket.reference }}</dd>
+          <dt>Opened</dt><dd>{{ ticket.created_at|daystamp }}</dd>
+          <dt>Updated</dt><dd>{{ ticket.updated_at|daystamp }}</dd>
+          <dt>Assignee</dt><dd>{{ ticket.assignee.name|default:"Unassigned" }}</dd>
+          <dt>Priority</dt><dd>{{ ticket.get_priority_display }}</dd>
+          <dt>Status</dt><dd>{{ ticket.get_status_display }}</dd>
+        </dl>
+      </div>
+    </section>
+
+    {% if ticket.order %}
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Linked order</h2>
+          <div class="card-sub">{{ ticket.order.number }}</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <dl class="kv">
+          <dt>Station</dt><dd>{{ ticket.order.station.name }}</dd>
+          <dt>Fuel</dt><dd>{{ ticket.order.litres }} L {{ ticket.order.get_fuel_type_display }}</dd>
+          <dt>Status</dt><dd>{{ ticket.order.get_status_display }}</dd>
+          <dt>Total</dt><dd class="total">{{ ticket.order.total|money }}</dd>
+        </dl>
+        <a class="btn btn-ghost btn-block mt-16" href="{% url 'console:order_detail' ticket.order.pk %}">Open order</a>
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 class="card-title">Customer</h2>
+          <div class="card-sub">Account at a glance</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="cell-user">
+          <span class="avatar">{{ ticket.customer.initials }}</span>
+          <div>
+            <div class="name">{{ ticket.customer.name }}</div>
+            <div class="sub mono">{{ ticket.customer.phone }}</div>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <dl class="kv">
+          <dt>Wallet</dt><dd>{{ ticket.customer.wallet_balance|money }}</dd>
+          <dt>Points</dt><dd>{{ ticket.customer.points }}</dd>
+          <dt>Joined</dt><dd>{{ ticket.customer.date_joined|daystamp }}</dd>
+        </dl>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

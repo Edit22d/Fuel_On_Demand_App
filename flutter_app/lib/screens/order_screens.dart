@@ -1,7 +1,10 @@
-import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/core.dart';
+import '../services/location_service.dart';
+import '../services/tracking_service.dart';
+import 'browse_screens.dart';
 import 'sheets.dart';
 
 Widget _stepIntro(String step, String title, {String? body}) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -188,7 +191,7 @@ class _VehicleScreenState extends State<VehicleScreen> {
             child: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Row(mainAxisSize: MainAxisSize.min, children: [
               Ic(IconName.plus, color: FC.gold),
               const SizedBox(width: 6),
-              Text('Add another vehicle', style: fs(11.2, color: FC.gold, w: FontWeight.w700)),
+              Flexible(child: Text('Add another vehicle', style: fs(11.2, color: FC.gold, w: FontWeight.w700))),
             ])),
           ),
         ),
@@ -261,68 +264,59 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
         ),
       );
 
-  Widget _map(BuildContext context) => Container(
+  /// Pins the delivery point on the real map and resolves a street address.
+  Future<void> _pin(LatLng p) async {
+    app.setDeliveryPoint(p.latitude, p.longitude);
+    setState(() {});
+    final label = await location.describe(p.latitude, p.longitude);
+    if (label == null || !mounted) return;
+    app.setDeliveryPoint(p.latitude, p.longitude, address: label);
+    setState(() {});
+  }
+
+  Future<void> _useMyGps() async {
+    final fix = await location.current();
+    if (!mounted) return;
+    if (fix == null) {
+      toast(context, 'Location is unavailable. Turn on GPS or pick a pin on the map.');
+      return;
+    }
+    app.setGeo(fix.lat, fix.lng, label: fix.label);
+    app.setDeliveryPoint(fix.lat, fix.lng, address: fix.label);
+    setState(() {});
+  }
+
+  Widget _map(BuildContext context) => LiveMap(
         height: 265,
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(color: const Color(0xFF15191C), borderRadius: BorderRadius.circular(18), border: Border.all(color: FC.line)),
-        child: LayoutBuilder(builder: (c, cons) {
-          final w = cons.maxWidth, h = cons.maxHeight;
-          return Stack(children: [
-            const Positioned.fill(child: MapGrid(bg: Color(0xFF15191C))),
-            Positioned(
-              left: w * .33,
-              top: h * .20,
-              child: Transform(
-                alignment: Alignment.center,
-                transform: Matrix4.identity()
-                  ..multiply(Matrix4.skewX(-25 * math.pi / 180))
-                  ..multiply(Matrix4.rotationZ(-10 * math.pi / 180)),
-                child: const RouteLine(width: 150, height: 90, stroke: 4, radius: 24),
+        destination: app.deliveryPoint ?? app.geoPoint ?? MapConfig.kampala,
+        radius: 18,
+        myLocation: app.locationOn,
+        showRoute: false,
+        showRecenter: false,
+        padding: const EdgeInsets.only(bottom: 90),
+        onTap: _pin,
+        overlay: Positioned(top: 12, right: 12, child: RoundAction(IconName.location, onTap: _useMyGps)),
+        footer: Tap(
+          onTap: () async {
+            await showAddressSheet(context);
+            if (mounted) setState(() {});
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+            decoration: BoxDecoration(color: const Color(0xEB0C0E11), borderRadius: BorderRadius.circular(12), border: Border.all(color: FC.line)),
+            child: Row(children: [
+              Ic(IconName.location, size: 17, color: FC.gold),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  FcText('DELIVERY LOCATION · TAP MAP TO MOVE PIN', kind: Tx.caption, color: FC.muted),
+                  FcText(app.deliveryAddress, kind: Tx.label, maxLines: 1),
+                ]),
               ),
-            ),
-            Positioned(
-              left: w * .54,
-              top: h * .27,
-              child: Transform.rotate(
-                angle: -math.pi / 4,
-                child: Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: FC.gold,
-                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(21), topRight: Radius.circular(21), bottomRight: Radius.circular(21), bottomLeft: Radius.circular(4)),
-                    boxShadow: [BoxShadow(color: al(FC.gold, .12), spreadRadius: 7)],
-                  ),
-                  child: Transform.rotate(angle: math.pi / 4, child: Center(child: Ic(IconName.location, color: FC.onGold))),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 12,
-              right: 12,
-              bottom: 12,
-              child: Tap(
-                onTap: () async {
-                  await showAddressSheet(context);
-                  if (mounted) setState(() {});
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-                  decoration: BoxDecoration(color: const Color(0xEB0C0E11), borderRadius: BorderRadius.circular(12), border: Border.all(color: FC.line)),
-                  child: Row(children: [
-                    Ic(IconName.location, size: 17, color: FC.gold),
-                    const SizedBox(width: 12),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      FcText('DELIVERY LOCATION', kind: Tx.caption, color: FC.muted),
-                      FcText(app.deliveryAddress, kind: Tx.label, maxLines: 1),
-                    ])),
-                    Ic(IconName.chevron, size: 16, color: FC.muted),
-                  ]),
-                ),
-              ),
-            ),
-          ]);
-        }),
+              Ic(IconName.chevron, size: 16, color: FC.muted),
+            ]),
+          ),
+        ),
       );
 
   @override
@@ -345,10 +339,10 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           padding: const EdgeInsets.only(top: 18),
           decoration: BoxDecoration(border: Border(top: BorderSide(color: FC.line))),
           child: Row(children: [
-            ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/images/station-hero.jpg', width: 48, height: 48, fit: BoxFit.cover)),
+            ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/images/station-hero.png', width: 48, height: 48, fit: BoxFit.cover)),
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const FcText('Stabex Kira Road', kind: Tx.label),
+              FcText(livePrices.selected.name, kind: Tx.label),
               FcText('${app.productName} · ${app.litres} litres', kind: Tx.caption, color: FC.muted),
             ])),
             FcText('UGX ${fmt(app.fuelTotal)}', kind: Tx.subtitle),
@@ -390,6 +384,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
     setState(() => _busy = true);
     await Future.delayed(const Duration(milliseconds: 1200));
     if (!mounted) return;
+    // Local reference + demand signal; the backend returns the canonical order
+    // id when `POST /orders` lands (tracking adopts it automatically).
+    app.newOrderId();
+    livePrices.recordOrder(livePrices.selectedId, app.fuelType == 'Diesel' ? FuelType.diesel : FuelType.petrol, app.litres.toDouble());
     setState(() => _busy = false);
     widget.go(Screen.tracking);
   }
@@ -431,7 +429,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
             child: Padding(padding: const EdgeInsets.symmetric(vertical: 6), child: Row(mainAxisSize: MainAxisSize.min, children: [
               Ic(IconName.plus, color: FC.gold),
               const SizedBox(width: 6),
-              Text('Add new payment method', style: fs(11.2, color: FC.gold, w: FontWeight.w700)),
+              Flexible(child: Text('Add new payment method', style: fs(11.2, color: FC.gold, w: FontWeight.w700))),
             ])),
           ),
         ),
@@ -446,8 +444,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Ic(IconName.shield, size: 16, color: FC.green),
-          SizedBox(width: 6),
-          FcText('Encrypted and protected payment', kind: Tx.caption, color: FC.muted),
+          const SizedBox(width: 6),
+          Expanded(child: FcText('Encrypted and protected payment', kind: Tx.caption, color: FC.muted, align: TextAlign.center)),
         ]),
         FcButton('Confirm & pay UGX ${fmt(total)}', loading: _busy, onTap: _pay),
       ]),
@@ -466,193 +464,393 @@ class TrackingScreen extends StatefulWidget {
 }
 
 class _TrackingScreenState extends State<TrackingScreen> {
-  int _p = 1;
-  Timer? _t;
-
   @override
   void initState() {
     super.initState();
-    _t = Timer.periodic(const Duration(milliseconds: 3500), (_) {
-      if (mounted) setState(() => _p = math.min(3, _p + 1));
-    });
+    _begin();
   }
 
-  @override
-  void dispose() {
-    _t?.cancel();
-    super.dispose();
+  /// Opens one tracking session for the order that was just paid for.
+  ///
+  /// [tracker] streams `GET /orders/{id}/tracking` every few seconds and falls
+  /// back to a labelled preview while the backend is still being built, so the
+  /// map, driver and fuel gauges are never empty.
+  Future<void> _begin() async {
+    final station = livePrices.selected;
+    final id = app.activeOrderId ?? app.newOrderId();
+    final running = tracker.order;
+    if (running == null || running.orderId != id || !running.stage.active) {
+      await tracker.start(OrderSeed(
+        orderId: id,
+        litres: app.litres,
+        pickup: station.point,
+        destination: app.deliveryPoint ?? app.geoPoint ?? MapConfig.kampala,
+        stationName: station.name,
+        product: app.productName,
+      ));
+    }
+    // Keep the delivery pin honest even if the customer moved after ordering.
+    final fix = await location.current();
+    if (fix != null && mounted) app.setGeo(fix.lat, fix.lng, label: fix.label);
   }
 
-  Widget _map(BuildContext context) {
-    return Container(
-      color: const Color(0xFF13171A),
-      child: LayoutBuilder(builder: (c, cons) {
-        final w = cons.maxWidth, h = cons.maxHeight;
-        final pos = [const Offset(.56, .25), const Offset(.56, .25), const Offset(.43, .42), const Offset(.34, .54)][_p];
-        return ClipRect(
-          child: Stack(children: [
-            const Positioned.fill(child: MapGrid()),
-            Positioned(
-              left: -w * .15,
-              top: h * .45,
-              width: w * 1.3,
-              height: 22,
-              child: Transform.rotate(angle: -12 * math.pi / 180, child: Container(decoration: const BoxDecoration(color: Color(0xFF2C3034), boxShadow: [BoxShadow(color: Color(0xFF1B1F23), spreadRadius: 8)]))),
-            ),
-            Positioned(
-              left: w * .57,
-              top: -h * .05,
-              width: 22,
-              height: h * 1.1,
-              child: Transform.rotate(angle: 16 * math.pi / 180, child: Container(decoration: const BoxDecoration(color: Color(0xFF2C3034), boxShadow: [BoxShadow(color: Color(0xFF1B1F23), spreadRadius: 8)]))),
-            ),
-            Positioned(left: w * .30, top: h * .27, child: Transform.rotate(angle: -12 * math.pi / 180, child: const RouteLine(width: 190, height: 115, stroke: 5, dotted: true))),
-            Positioned(
-              left: w * .27,
-              top: h * .62,
-              child: Container(width: 43, height: 43, decoration: BoxDecoration(shape: BoxShape.circle, color: FC.ink), child: const Center(child: Ic(IconName.location, color: Color(0xFF111111)))),
-            ),
-            AnimatedPositioned(
-              duration: const Duration(milliseconds: 900),
-              curve: Curves.easeInOut,
-              left: w * pos.dx,
-              top: h * pos.dy,
-              child: Container(
-                width: 43,
-                height: 43,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: FC.gold, boxShadow: [BoxShadow(color: al(FC.gold, .12), spreadRadius: 8)]),
-                child: const Center(child: Ic(IconName.truck, color: Color(0xFF111111))),
-              ),
-            ),
-            Positioned(
-              top: topInset(context) + 17,
-              left: 18,
-              right: 18,
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                FcButton.icon(IconName.arrow, onTap: () => widget.go(Screen.home, root: true)),
-                Text('Live order', style: fs(12, w: FontWeight.w700)),
-                const SizedBox(width: 42), // the global top-right menu icon sits here
-              ]),
-            ),
+  Future<void> _confirm() async {
+    await tracker.confirmDelivery();
+    app.completeDelivery();
+    haptic(HapticFeedbackType.heavy);
+    if (!mounted) return;
+    widget.go(Screen.success, replace: true);
+  }
+
+  Future<void> _call(Driver d) async {
+    var ok = false;
+    try {
+      ok = await launchUrl(Uri(scheme: 'tel', path: d.phone));
+    } catch (_) {
+      ok = false;
+    }
+    if (ok || !mounted) return;
+    toast(context, 'Could not open the dialler for ${d.name}.');
+  }
+
+  static String _ago(DateTime at) {
+    final s = DateTime.now().difference(at).inSeconds;
+    if (s < 5) return 'just now';
+    if (s < 60) return '${s}s ago';
+    return '${s ~/ 60}m ago';
+  }
+
+  // ------------------------------------------------------------------- map
+  Widget _map(BuildContext context, OrderTracking t) => LiveMap(
+        driver: t.driverPoint,
+        pickup: t.pickup,
+        destination: t.destination,
+        route: t.route,
+        myLocation: app.locationOn,
+        radius: 0,
+        padding: const EdgeInsets.only(top: 104, bottom: 96),
+        overlay: Positioned(
+          top: topInset(context) + 10,
+          left: 14,
+          right: 14,
+          child: Row(children: [
+            FcButton.icon(IconName.arrow, key: const ValueKey('page-back'), onTap: () => widget.go(Screen.home, root: true)),
+            const Spacer(),
+            _liveChip(t),
           ]),
-        );
-      }),
+        ),
+        footer: _mapFooter(t),
+      );
+
+  Widget _liveChip(OrderTracking t) {
+    final live = tracker.isLive;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+      decoration: BoxDecoration(color: al(FC.black, .84), borderRadius: BorderRadius.circular(20), border: Border.all(color: FC.line)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        PulseDot(color: live ? FC.green : FC.gold, size: 5),
+        const SizedBox(width: 7),
+        Text(live ? 'LIVE' : 'PREVIEW', style: fs(8.8, color: live ? FC.green : FC.gold, w: FontWeight.w800, ls: .8, h: 1)),
+        const SizedBox(width: 8),
+        Text('#${t.orderId}', style: fs(9.6, color: FC.muted, h: 1)),
+      ]),
     );
   }
 
-  Widget _timelineItem(String label, int i, bool last) {
-    final done = i <= _p;
-    final check = i < _p;
+  Widget _mapFooter(OrderTracking t) {
+    final remaining = (t.driverPoint != null && t.destination != null) ? distanceKm(t.driverPoint!, t.destination!) : null;
+    final away = remaining == null
+        ? 'Locating your partner'
+        : remaining < 1
+            ? '${(remaining * 1000).round()} m away'
+            : '${remaining.toStringAsFixed(1)} km away';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+      decoration: BoxDecoration(color: al(FC.black, .88), borderRadius: BorderRadius.circular(12), border: Border.all(color: FC.line)),
+      child: Row(children: [
+        Ic(IconName.truck, size: 16, color: FC.gold),
+        const SizedBox(width: 10),
+        Expanded(
+          child: FcText('$away · updated ${_ago(t.updatedAt)}', kind: Tx.caption, color: FC.muted, maxLines: 1),
+        ),
+        const SizedBox(width: 8),
+        Text('${(t.routeProgress * 100).round()}%', style: fs(9.6, color: FC.gold, w: FontWeight.w800, h: 1)),
+      ]),
+    );
+  }
+
+  // --------------------------------------------------------------- sheet
+  Widget _sheet(BuildContext context, OrderTracking t, {required bool handle}) {
+    final done = t.stage == OrderStage.delivered || t.stage == OrderStage.cancelled;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: gapped([
+        if (handle)
+          Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: FC.line, borderRadius: BorderRadius.circular(4)))),
+        Entrance(_headline(t), index: 0),
+        Entrance(_driverCard(context, t), index: 1),
+        Entrance(_fuelCard(t), index: 2),
+        Entrance(_timeline(t), index: 3),
+        if (tracker.error != null) Entrance(FcText(tracker.error!, kind: Tx.caption, color: FC.danger), index: 4),
+        Entrance(
+          Column(children: gapped([
+            if (done)
+              FcButton('Back to home', onTap: () => widget.go(Screen.home, root: true))
+            else if (t.stage == OrderStage.arriving)
+              FcButton('Confirm delivery', onTap: _confirm)
+            else
+              FcButton('Cancel order', variant: BV.ghost, onTap: () => widget.go(Screen.cancelOrder)),
+            FcText('UGX ${fmt(app.orderTotal)} · ${app.productName} ${app.litres}L', kind: Tx.caption, color: FC.muted, align: TextAlign.center),
+          ], 10)),
+          index: 5,
+        ),
+      ], 16),
+    );
+  }
+
+  Widget _headline(OrderTracking t) => Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            FcText(t.stage.headline, kind: Tx.title),
+            const SizedBox(height: 6),
+            AnimatedSwitcher(
+              duration: Motion.base,
+              child: FcText(_stageHint(t), key: ValueKey(t.stage), kind: Tx.caption, color: FC.muted),
+            ),
+          ]),
+        ),
+        const SizedBox(width: 12),
+        _etaRing(t),
+      ]);
+
+  String _stageHint(OrderTracking t) => switch (t.stage) {
+        OrderStage.confirmed => 'We are matching you with a certified partner.',
+        OrderStage.collecting => 'Metering ${t.litres}L into sealed delivery containers.',
+        OrderStage.enRoute => 'Following your partner live on the map.',
+        OrderStage.arriving => 'Meet your partner at your vehicle.',
+        OrderStage.delivered => 'Fuel dispensed and payment complete.',
+        OrderStage.cancelled => 'This delivery was cancelled.',
+      };
+
+  Widget _etaRing(OrderTracking t) {
+    final done = t.stage == OrderStage.delivered || t.stage == OrderStage.cancelled;
+    return Container(
+      width: 74,
+      height: 74,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: al(FC.gold, .05),
+        border: Border.all(color: al(FC.gold, .30)),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: done
+            ? [Ic(IconName.check, size: 24, color: FC.gold)]
+            : [
+                AnimatedSwitcher(
+                  duration: Motion.fast,
+                  child: Text('${t.etaMinutes}', key: ValueKey(t.etaMinutes), style: fs(23.2, color: FC.gold, w: FontWeight.w700, h: 1)),
+                ),
+                Text('MIN', style: fs(7.68, color: FC.gold, w: FontWeight.w800, h: 1.3)),
+              ],
+      ),
+    );
+  }
+
+  Widget _driverCard(BuildContext context, OrderTracking t) {
+    final d = t.driver;
+    if (d == null) {
+      return Panel(
+        radius: 14,
+        padding: const EdgeInsets.all(13),
+        child: Row(children: [
+          PulseDot(color: FC.gold, size: 5),
+          const SizedBox(width: 10),
+          Expanded(child: FcText('Matching a certified delivery partner…', kind: Tx.caption, color: FC.muted)),
+        ]),
+      );
+    }
+    return Panel(
+      radius: 14,
+      padding: const EdgeInsets.all(12),
+      child: Row(children: [
+        Container(
+          width: 46,
+          height: 46,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: al(FC.gold, .12),
+            border: Border.all(color: al(FC.gold, .45)),
+          ),
+          child: Text(d.initials, style: fs(13, color: FC.gold, w: FontWeight.w800, h: 1)),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            FcText(d.name, kind: Tx.label),
+            const SizedBox(height: 2),
+            FcText(d.caption.isEmpty ? 'Certified delivery partner' : d.caption, kind: Tx.caption, color: FC.muted, maxLines: 1),
+          ]),
+        ),
+        FcButton.icon(IconName.phone, onTap: d.phone.isEmpty ? null : () => _call(d)),
+      ]),
+    );
+  }
+
+  Widget _fuelCard(OrderTracking t) => Panel(
+        radius: 14,
+        padding: const EdgeInsets.all(14),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          Row(children: [
+            Ic(IconName.fuel, size: 16, color: FC.gold),
+            const SizedBox(width: 8),
+            const FcText('Fuel on board', kind: Tx.label),
+            const Spacer(),
+            FcText('${fmt((t.deliveredFraction * 100).round())}%', kind: Tx.caption, color: FC.gold),
+          ]),
+          const SizedBox(height: 10),
+          AnimatedProgress(t.deliveredFraction, height: 7),
+          const SizedBox(height: 12),
+          Row(children: [
+            _fuelStat('Loaded', '${t.litresLoaded.round()} L'),
+            const SizedBox(width: 20),
+            _fuelStat('In your tank', '${t.litresDispensed.round()} L'),
+            const SizedBox(width: 20),
+            _fuelStat('Ordered', '${t.litres} L'),
+          ]),
+        ]),
+      );
+
+  Widget _fuelStat(String label, String value) => Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(value, style: fs(13.6, w: FontWeight.w700, h: 1.2)),
+          Text(label, style: fs(9.28, color: FC.muted, h: 1.3)),
+        ]),
+      );
+
+  Widget _timeline(OrderTracking t) {
+    const stages = [OrderStage.confirmed, OrderStage.collecting, OrderStage.enRoute, OrderStage.arriving];
+    final done = t.stage == OrderStage.delivered;
+    return Column(children: [
+      for (var i = 0; i < stages.length; i++)
+        _timelineItem(stages[i].label, i, done ? stages.length : t.stage.step, done, i == stages.length - 1),
+    ]);
+  }
+
+  Widget _timelineItem(String label, int i, int current, bool complete, bool last) {
+    final reached = complete || i <= current;
+    final checked = complete || i < current;
     return SizedBox(
-      height: 38,
+      height: 36,
       child: Stack(children: [
-        if (!last) Positioned(left: 10, top: 20, child: Container(width: 1, height: 22, color: FC.line)),
+        if (!last)
+          Positioned(
+            left: 10,
+            top: 21,
+            child: AnimatedContainer(
+              duration: Motion.base,
+              width: 1.5,
+              height: 20,
+              color: checked ? al(FC.gold, .55) : FC.line,
+            ),
+          ),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           SizedBox(
             width: 28,
             child: Align(
               alignment: Alignment.topLeft,
-              child: Container(
+              child: AnimatedContainer(
+                duration: Motion.base,
+                curve: Motion.soft,
                 width: 21,
                 height: 21,
                 alignment: Alignment.center,
-                decoration: BoxDecoration(shape: BoxShape.circle, color: done ? FC.gold : null, border: Border.all(color: done ? FC.gold : FC.dim)),
-                child: check ? const Ic(IconName.check, size: 13, color: Color(0xFF111111)) : Text('${i + 1}', style: fs(8.8, color: done ? const Color(0xFF111111) : FC.dim, h: 1)),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: checked ? FC.gold : (reached ? al(FC.gold, .18) : null),
+                  border: Border.all(color: reached ? FC.gold : FC.dim),
+                ),
+                child: checked
+                    ? const Ic(IconName.check, size: 12, color: Color(0xFF111111))
+                    : Text('${i + 1}', style: fs(8.8, color: reached ? FC.gold : FC.dim, h: 1)),
               ),
             ),
           ),
           const SizedBox(width: 9),
-          Padding(padding: const EdgeInsets.only(top: 3), child: FcText(label, kind: Tx.label, color: done ? FC.ink : FC.dim)),
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: FcText(label, kind: Tx.label, color: reached ? FC.ink : FC.dim),
+          ),
         ]),
       ]),
     );
   }
 
-  Widget _sheet(BuildContext context, {required bool handle}) {
-    const steps = ['Order confirmed', 'Fuel collected', 'Arriving at your location', 'Delivery complete'];
-    final title = _p == 1 ? 'Fuel is on the way' : (_p == 2 ? 'Your driver is nearby' : 'Driver has arrived');
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: gapped([
-      if (handle) Center(child: Container(width: 42, height: 4, decoration: BoxDecoration(color: FC.line, borderRadius: BorderRadius.circular(4)))),
-      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const LivePill('LIVE'),
-            const SizedBox(height: 8),
-            FcText(title, kind: Tx.title),
-            FcText(_p == 3 ? 'Meet your driver at the delivery point.' : 'Estimated arrival in 12–16 minutes', kind: Tx.caption, color: FC.muted),
-          ]),
-        ),
-        const SizedBox(width: 12),
-        Container(
-          width: 70,
-          height: 70,
-          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: const Color(0xFF4D4321))),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            Text(_p == 3 ? '0' : (_p == 2 ? '5' : '14'), style: fs(22.4, color: FC.gold, w: FontWeight.w700, h: 1)),
-            Text('MIN', style: fs(7.68, color: FC.gold, w: FontWeight.w800, h: 1.2)),
-          ]),
-        ),
-      ]),
-      Panel(
-        radius: 12,
-        padding: const EdgeInsets.all(12),
-        child: Row(children: [
-          Container(width: 44, height: 44, alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: FC.gold), child: Text('MK', style: fs(12, color: const Color(0xFF111111), w: FontWeight.w800, h: 1))),
-          const SizedBox(width: 12),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText('Marcus K.', kind: Tx.label), FcText('Certified delivery partner · 4.9', kind: Tx.caption, color: FC.muted)])),
-          FcButton.icon(IconName.phone, onTap: () => toast(context, 'Calling Marcus K. will work once the backend shares driver contact details.')),
-        ]),
-      ),
-      Column(children: [for (var i = 0; i < steps.length; i++) _timelineItem(steps[i], i, i == steps.length - 1)]),
-      _p == 3
-          ? FcButton('Confirm delivery', onTap: () {
-              app.completeDelivery();
-              widget.go(Screen.success, replace: true);
-            })
-          : FcButton('Preview arrival', variant: BV.outline, onTap: () => setState(() => _p = 3)),
-    ], 18));
-  }
-
+  // -------------------------------------------------------------- layout
   @override
   Widget build(BuildContext context) {
-    final pad = cl(context, 20, 6, 54);
-    if (isWide(context)) {
-      return ColoredBox(
-        color: FC.black,
-        child: Row(children: [
-          Expanded(flex: 56, child: _map(context)),
-          Expanded(
-            flex: 44,
-            child: LayoutBuilder(builder: (c, cons) => SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: cons.maxHeight),
-                    child: Center(child: Padding(padding: EdgeInsets.symmetric(horizontal: vw(context) * .05, vertical: vh(context) * .08), child: _sheet(context, handle: false))),
-                  ),
-                )),
-          ),
-        ]),
-      );
-    }
-    final mapH = vh(context) * .5;
     return ColoredBox(
       color: FC.black,
-      child: Stack(children: [
-        Positioned(left: 0, right: 0, top: 0, height: mapH, child: _map(context)),
-        Positioned.fill(
-          child: SingleChildScrollView(
-            child: Column(children: [
-              SizedBox(height: mapH - 25),
-              Container(
-                constraints: BoxConstraints(minHeight: vh(context) - (mapH - 25)),
-                padding: EdgeInsets.fromLTRB(pad, 12, pad, 34 + bottomInset(context)),
-                decoration: BoxDecoration(color: FC.black, borderRadius: BorderRadius.vertical(top: Radius.circular(28))),
-                child: _sheet(context, handle: true),
+      child: ListenableBuilder(
+        listenable: tracker,
+        builder: (context, _) {
+          final t = tracker.order;
+          if (t == null) {
+            return Center(child: CircularProgressIndicator(color: FC.gold));
+          }
+          return _layout(context, t);
+        },
+      ),
+    );
+  }
+
+  Widget _layout(BuildContext context, OrderTracking t) {
+    final pad = cl(context, 20, 6, 54);
+    if (isWide(context)) {
+      return Row(children: [
+        Expanded(flex: 56, child: _map(context, t)),
+        Expanded(
+          flex: 44,
+          child: LayoutBuilder(
+            builder: (c, cons) => SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: cons.maxHeight),
+                child: Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: vw(context) * .05, vertical: vh(context) * .06),
+                    child: _sheet(context, t, handle: false),
+                  ),
+                ),
               ),
-            ]),
+            ),
           ),
         ),
-      ]),
-    );
+      ]);
+    }
+
+    // Phone: the map stays fixed and interactive, the details scroll under it.
+    final sheetH = math.max(vh(context) * .54, 340.0);
+    return Stack(children: [
+      Positioned(left: 0, right: 0, top: 0, bottom: sheetH - 24, child: _map(context, t)),
+      Positioned(
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: sheetH,
+        child: Container(
+          decoration: BoxDecoration(
+            color: FC.black,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            border: Border(top: BorderSide(color: FC.line)),
+          ),
+          child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(pad, 14, pad, 28 + bottomInset(context)),
+            child: _sheet(context, t, handle: true),
+          ),
+        ),
+      ),
+    ]);
   }
 }
 
@@ -708,7 +906,7 @@ class _SuccessScreenState extends State<SuccessScreen> {
                   Panel(
                     padding: const EdgeInsets.all(16),
                     child: Column(children: gapped([
-                      const KvRow('Order ID', '#FC-29841', size: 10.88),
+                      KvRow('Order ID', app.orderIdLabel, size: 10.88),
                       KvRow('Total paid', 'UGX ${fmt(app.orderTotal)}', size: 10.88),
                       KvRow('Payment', app.selectedPay.title, size: 10.88),
                     ], 11)),
@@ -721,7 +919,7 @@ class _SuccessScreenState extends State<SuccessScreen> {
                         child: Padding(padding: EdgeInsets.only(left: s == 1 ? 0 : 9), child: Ic(IconName.star, size: 26, color: FC.gold, filled: s <= _rating)),
                       ),
                   ]),
-                  FcButton('Back to home', onTap: () => widget.go(Screen.home, root: true)),
+                  FcButton('Back to home', key: const ValueKey('page-back'), onTap: () => widget.go(Screen.home, root: true)),
                   FcButton('View receipt', variant: BV.ghost, onTap: () => widget.go(Screen.orders, root: true)),
                 ], 19)),
               ),
@@ -782,7 +980,7 @@ class _CancelOrderScreenState extends State<CancelOrderScreen> {
                 const LivePill('ON THE WAY'),
                 const SizedBox(height: 6),
                 FcText('${app.productName} · ${app.litres}L', kind: Tx.subtitle),
-                FcText('Stabex Kira Road · Order #FC-29841', kind: Tx.caption, color: FC.muted),
+                FcText('${livePrices.selected.name} · Order ${app.orderIdLabel}', kind: Tx.caption, color: FC.muted),
               ]),
             ),
             FcText('12–16 min', kind: Tx.label, color: FC.gold),
@@ -795,7 +993,7 @@ class _CancelOrderScreenState extends State<CancelOrderScreen> {
           SizedBox(height: 9),
           FcText('Why are you cancelling?', kind: Tx.title),
           SizedBox(height: 9),
-          FcText('Your feedback helps us improve the FuelConnect experience.', color: FC.muted),
+          FcText('Your feedback helps us improve the FuelOnDemand experience.', color: FC.muted),
         ]),
 
         // reasons
@@ -854,9 +1052,19 @@ class _CancelOrderScreenState extends State<CancelOrderScreen> {
           ], 13)),
         ),
 
-        FcButton('Confirm cancellation', onTap: _reason.isEmpty ? null : () => setState(() => _cancelled = true)),
+        FcButton('Confirm cancellation', onTap: _reason.isEmpty
+            ? null
+            : () {
+                tracker.cancel();
+                setState(() => _cancelled = true);
+              }),
         FcButton('Keep my order', variant: BV.outline, onTap: () => widget.go(Screen.tracking)),
-        FcText('Need help instead? Contact FuelConnect support.', kind: Tx.caption, color: FC.muted, align: TextAlign.center),
+        Center(
+          child: TextAction(
+            'Need help instead? Contact support',
+            onTap: () => showSupportChat(context, topic: 'I need help with cancelling order #${app.orderIdLabel}.'),
+          ),
+        ),
       ]),
     );
   }
@@ -899,14 +1107,14 @@ class _CancelOrderScreenState extends State<CancelOrderScreen> {
                   FcText('ORDER CANCELLED', kind: Tx.label, color: FC.gold, align: TextAlign.center),
                   const FcText('Your order has been cancelled.', kind: Tx.display, align: TextAlign.center),
                   FcText(
-                    'We’ve notified Stabex Kira Road and your delivery partner. Your refund is being processed.',
+                    'We’ve notified ${livePrices.selected.name} and your delivery partner. Your refund is being processed.',
                     color: FC.muted,
                     align: TextAlign.center,
                   ),
                   Panel(
                     padding: const EdgeInsets.all(16),
                     child: Column(children: gapped([
-                      const KvRow('Order ID', '#FC-29841', size: 10.88),
+                      KvRow('Order ID', app.orderIdLabel, size: 10.88),
                       KvRow('Refund amount', 'UGX ${fmt(refund)}', size: 10.88),
                       KvRow('Refund method', app.selectedPay.title, size: 10.88),
                       const KvRow('Expected refund', 'Within 24 hours', size: 10.88),

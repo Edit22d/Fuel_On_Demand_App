@@ -1,0 +1,80 @@
+{% extends "dashboard/base.html" %}
+{% load static fc %}
+{% block title %}Customers · FuelOnDemand{% endblock %}
+
+{% block content %}
+<div class="page-head-row">
+  <div>
+    <div class="eyebrow">Network</div>
+    <h2 class="page-title-lg">Customers</h2>
+    <p class="page-sub">Everyone ordering fuel — spend, loyalty and account status in one list.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-ghost" href="{% url 'console:orders' %}">{% icon "orders" 16 %} Recent orders</a>
+    <a class="btn btn-gold" href="{% url 'console:payments' %}">{% icon "wallet" 16 %} Ledger</a>
+  </div>
+</div>
+
+<div class="grid cols-3 mb-16">
+  <div class="stat-tile"><div class="k">Customers</div><div class="v">{{ counts.total }}</div></div>
+  <div class="stat-tile"><div class="k">Repeat buyers</div><div class="v">{{ counts.repeat }}</div></div>
+  <div class="stat-tile"><div class="k">Suspended</div><div class="v">{{ counts.suspended }}</div></div>
+</div>
+
+<form class="filters" method="get" action="{% url 'console:customers' %}">
+  <div class="search" style="position:relative">
+    {% icon "search" %}
+    <input name="q" value="{{ filters.q }}" placeholder="Name, phone or email" aria-label="Search customers">
+  </div>
+  <select class="select" name="status" aria-label="Status">
+    <option value="">Everyone</option>
+    <option value="active" {% if filters.status == "active" %}selected{% endif %}>Active</option>
+    <option value="suspended" {% if filters.status == "suspended" %}selected{% endif %}>Suspended</option>
+  </select>
+  <button class="btn btn-gold btn-sm" type="submit">{% icon "filter" 14 %} Apply</button>
+  <a class="btn btn-ghost btn-sm" href="{% url 'console:customers' %}">Reset</a>
+</form>
+
+<section class="card">
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr>
+          <th>Customer</th><th>Contact</th><th>Joined</th>
+          <th class="num">Orders</th><th class="num">Spend</th><th class="num">Wallet</th><th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in page %}
+        <tr>
+          <td>
+            <div class="cell-user">
+              <span class="avatar">{{ c.initials }}</span>
+              <div>
+                <div class="name"><a href="{% url 'console:customer_detail' c.pk %}">{{ c.name }}</a></div>
+                <div class="sub">{{ c.points }} pts · {{ c.referral_code|default:"—" }}</div>
+              </div>
+            </div>
+          </td>
+          <td class="small">
+            <div class="mono">{{ c.phone }}</div>
+            <div class="tiny dim">{{ c.email|default:"no email" }}</div>
+          </td>
+          <td class="small dim nowrap">{{ c.date_joined|ago }}</td>
+          <td class="num strong">{{ c.order_count }}</td>
+          <td class="num amount">{{ c.spend|default:0|money }}</td>
+          <td class="num">{{ c.wallet_balance|money }}</td>
+          <td>
+            {% if c.is_suspended %}<span class="chip bad">Suspended</span>
+            {% else %}<span class="chip ok">Active</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7"><div class="empty">No customers match this view.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% include "dashboard/_pagination.html" %}
+</section>
+{% endblock %}

@@ -1,0 +1,5 @@
+- Each feature directory follows the NestJS convention of colocating `*.controller.ts`, `*.service.ts`, `*.module.ts`, and a `dto/` subfolder holding class-validator DTOs.
+- Configuration values are read exclusively through `ConfigService` using the typed shape exported from `config/configuration.ts`, never via raw `process.env` accessors.
+- Request validation is performed by decorating controller inputs with DTO classes and relying on the global `ValidationPipe` configured in `main.ts` (whitelist + transform).
+- Authentication and authorization are applied via Nest guards (`JwtAuthGuard`, `RolesGuard`) registered globally in `AppModule`, with route-level overrides done through `@UseGuards` or the `@Public()` / `@Roles()` decorators in `common/decorators/`.
+- Cross-cutting behavior (audit logging, exception formatting) is implemented as Nest interceptors/filters and registered once via `APP_INTERCEPTOR` / `APP_FILTER` providers rather than per-controller wiring.

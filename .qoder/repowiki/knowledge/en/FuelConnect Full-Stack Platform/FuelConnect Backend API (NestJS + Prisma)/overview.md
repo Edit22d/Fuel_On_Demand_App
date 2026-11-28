@@ -1,0 +1,1 @@
+NestJS REST and Socket.IO backend for the FuelConnect/FuelOnDemand fuel delivery platform, providing auth, orders, payments, tracking, riders, customers, admin, and audit features backed by PostgreSQL/PostGIS and Redis.

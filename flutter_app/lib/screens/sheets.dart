@@ -21,7 +21,13 @@ class _LocationForm extends StatefulWidget {
 class _LocationFormState extends State<_LocationForm> {
   final _c = TextEditingController();
   String? _err;
-  static const _presets = ['Kololo, Kampala', 'Bukoto, Kampala', 'Ntinda, Kampala', 'Nakasero, Kampala', 'Muyenga, Kampala'];
+  static const _presets = [
+    'Kololo, Kampala',
+    'Bukoto, Kampala',
+    'Ntinda, Kampala',
+    'Nakasero, Kampala',
+    'Muyenga, Kampala'
+  ];
 
   void _save(String v) {
     if (v.trim().length < 3) {
@@ -39,20 +45,35 @@ class _LocationFormState extends State<_LocationForm> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+  Widget build(BuildContext context) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Wrap(spacing: 8, runSpacing: 8, children: [
           for (final p in _presets)
             Tap(
               onTap: () => _save(p),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
-                decoration: BoxDecoration(color: FC.surface2, borderRadius: BorderRadius.circular(20), border: Border.all(color: p == app.location ? FC.gold : FC.line)),
-                child: Text(p, style: fs(10.88, color: p == app.location ? FC.gold : FC.muted)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
+                decoration: BoxDecoration(
+                    color: FC.surface2,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                        color: p == app.location ? FC.gold : FC.line)),
+                child: Text(p,
+                    style: fs(10.88,
+                        color: p == app.location ? FC.gold : FC.muted)),
               ),
             ),
         ]),
         const SizedBox(height: 18),
-        FcField(label: 'Area or street', hint: 'e.g. Bukoto Street, Kampala', icon: IconName.location, controller: _c, error: _err, action: TextInputAction.done, onSubmitted: _save),
+        FcField(
+            label: 'Area or street',
+            hint: 'e.g. Bukoto Street, Kampala',
+            icon: IconName.location,
+            controller: _c,
+            error: _err,
+            action: TextInputAction.done,
+            onSubmitted: _save),
         const SizedBox(height: 18),
         FcButton('Save location', onTap: () => _save(_c.text)),
       ]);
@@ -93,7 +114,8 @@ class _AddressFormState extends State<_AddressForm> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+  Widget build(BuildContext context) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         FcText('SAVED PLACES', kind: Tx.label, color: FC.gold),
         const SizedBox(height: 10),
         for (final p in app.places)
@@ -103,19 +125,36 @@ class _AddressFormState extends State<_AddressForm> {
               margin: const EdgeInsets.only(bottom: 9),
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: p.address == app.deliveryAddress ? al(FC.gold, .06) : FC.surface,
+                color: p.address == app.deliveryAddress
+                    ? al(FC.gold, .06)
+                    : FC.surface,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: p.address == app.deliveryAddress ? FC.gold : FC.line),
+                border: Border.all(
+                    color:
+                        p.address == app.deliveryAddress ? FC.gold : FC.line),
               ),
               child: Row(children: [
                 const IconBox(IconName.location),
                 const SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText(p.label, kind: Tx.label), FcText(p.address, kind: Tx.caption, color: FC.muted)])),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      FcText(p.label, kind: Tx.label),
+                      FcText(p.address, kind: Tx.caption, color: FC.muted)
+                    ])),
               ]),
             ),
           ),
         const SizedBox(height: 9),
-        FcField(label: 'Or type an address', hint: 'Street, building, landmark', icon: IconName.search, controller: _c, error: _err, action: TextInputAction.done, onSubmitted: _set),
+        FcField(
+            label: 'Or type an address',
+            hint: 'Street, building, landmark',
+            icon: IconName.search,
+            controller: _c,
+            error: _err,
+            action: TextInputAction.done,
+            onSubmitted: _set),
         const SizedBox(height: 18),
         FcButton('Use this address', onTap: () => _set(_c.text)),
       ]);
@@ -124,7 +163,9 @@ class _AddressFormState extends State<_AddressForm> {
 // ---------------------------------------------------------------------------
 // Add saved place
 // ---------------------------------------------------------------------------
-Future<bool?> showAddPlaceSheet(BuildContext context) => showFcSheet<bool>(context, title: 'Add a new place', builder: (ctx) => const _PlaceForm());
+Future<bool?> showAddPlaceSheet(BuildContext context) =>
+    showFcSheet<bool>(context,
+        title: 'Add a new place', builder: (ctx) => const _PlaceForm());
 
 class _PlaceForm extends StatefulWidget {
   const _PlaceForm();
@@ -155,10 +196,24 @@ class _PlaceFormState extends State<_PlaceForm> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        FcField(label: 'Name', hint: 'Home, Office, Gym…', icon: IconName.star, controller: _l, error: _le, action: TextInputAction.next),
+  Widget build(BuildContext context) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        FcField(
+            label: 'Name',
+            hint: 'Home, Office, Gym…',
+            icon: IconName.star,
+            controller: _l,
+            error: _le,
+            action: TextInputAction.next),
         const SizedBox(height: 16),
-        FcField(label: 'Address', hint: 'Street, building, landmark', icon: IconName.location, controller: _a, error: _ae, action: TextInputAction.done, onSubmitted: (_) => _save()),
+        FcField(
+            label: 'Address',
+            hint: 'Street, building, landmark',
+            icon: IconName.location,
+            controller: _a,
+            error: _ae,
+            action: TextInputAction.done,
+            onSubmitted: (_) => _save()),
         const SizedBox(height: 18),
         FcButton('Save place', onTap: _save),
       ]);
@@ -167,7 +222,9 @@ class _PlaceFormState extends State<_PlaceForm> {
 // ---------------------------------------------------------------------------
 // Add vehicle
 // ---------------------------------------------------------------------------
-Future<bool?> showAddVehicleSheet(BuildContext context) => showFcSheet<bool>(context, title: 'Add vehicle', builder: (ctx) => const _VehicleForm());
+Future<bool?> showAddVehicleSheet(BuildContext context) =>
+    showFcSheet<bool>(context,
+        title: 'Add vehicle', builder: (ctx) => const _VehicleForm());
 
 class _VehicleForm extends StatefulWidget {
   const _VehicleForm();
@@ -198,7 +255,11 @@ class _VehicleFormState extends State<_VehicleForm> {
       fuel: _fuel,
       color: _c.text.trim(),
       tank: tank.isEmpty ? '' : '${tank}L',
-      visual: name.split(' ').last.toUpperCase().substring(0, name.split(' ').last.length.clamp(1, 5).toInt()),
+      visual: name
+          .split(' ')
+          .last
+          .toUpperCase()
+          .substring(0, name.split(' ').last.length.clamp(1, 5).toInt()),
     ));
     Navigator.of(context).pop(true);
   }
@@ -213,10 +274,24 @@ class _VehicleFormState extends State<_VehicleForm> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        FcField(label: 'Make & model', hint: 'Toyota Prado', icon: IconName.truck, controller: _n, error: _ne, action: TextInputAction.next),
+  Widget build(BuildContext context) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        FcField(
+            label: 'Make & model',
+            hint: 'Toyota Prado',
+            icon: IconName.truck,
+            controller: _n,
+            error: _ne,
+            action: TextInputAction.next),
         const SizedBox(height: 14),
-        FcField(label: 'Number plate', hint: 'UBA 123X', icon: IconName.card, controller: _p, error: _pe, action: TextInputAction.next, formatters: [LengthLimitingTextInputFormatter(10)]),
+        FcField(
+            label: 'Number plate',
+            hint: 'UBA 123X',
+            icon: IconName.card,
+            controller: _p,
+            error: _pe,
+            action: TextInputAction.next,
+            formatters: [LengthLimitingTextInputFormatter(10)]),
         const SizedBox(height: 14),
         const FcText('FUEL TYPE', kind: Tx.label, color: Color(0xFFC7C8C9)),
         const SizedBox(height: 8),
@@ -229,17 +304,38 @@ class _VehicleFormState extends State<_VehicleForm> {
                   margin: EdgeInsets.only(right: f == 'Petrol' ? 8 : 0),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(color: _fuel == f ? al(FC.gold, .07) : FC.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _fuel == f ? FC.gold : FC.line)),
-                  child: Text(f, style: fs(11.52, color: _fuel == f ? FC.gold : FC.muted, w: FontWeight.w700)),
+                  decoration: BoxDecoration(
+                      color: _fuel == f ? al(FC.gold, .07) : FC.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border:
+                          Border.all(color: _fuel == f ? FC.gold : FC.line)),
+                  child: Text(f,
+                      style: fs(11.52,
+                          color: _fuel == f ? FC.gold : FC.muted,
+                          w: FontWeight.w700)),
                 ),
               ),
             ),
         ]),
         const SizedBox(height: 14),
         Row(children: [
-          Expanded(child: FcField(label: 'Colour (optional)', hint: 'Black', controller: _c, action: TextInputAction.next)),
+          Expanded(
+              child: FcField(
+                  label: 'Colour (optional)',
+                  hint: 'Black',
+                  controller: _c,
+                  action: TextInputAction.next)),
           const SizedBox(width: 12),
-          Expanded(child: FcField(label: 'Tank, litres', hint: '60', controller: _t, keyboard: TextInputType.number, formatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(3)])),
+          Expanded(
+              child: FcField(
+                  label: 'Tank, litres',
+                  hint: '60',
+                  controller: _t,
+                  keyboard: TextInputType.number,
+                  formatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(3)
+              ])),
         ]),
         const SizedBox(height: 18),
         FcButton('Add vehicle', onTap: _save),
@@ -249,7 +345,8 @@ class _VehicleFormState extends State<_VehicleForm> {
 // ---------------------------------------------------------------------------
 // Wallet top up
 // ---------------------------------------------------------------------------
-Future<bool?> showTopUpSheet(BuildContext context) => showFcSheet<bool>(context, title: 'Top up wallet', builder: (ctx) => const _TopUpForm());
+Future<bool?> showTopUpSheet(BuildContext context) => showFcSheet<bool>(context,
+    title: 'Top up wallet', builder: (ctx) => const _TopUpForm());
 
 class _TopUpForm extends StatefulWidget {
   const _TopUpForm();
@@ -283,7 +380,8 @@ class _TopUpFormState extends State<_TopUpForm> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+  Widget build(BuildContext context) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
           for (final p in _presets)
             Expanded(
@@ -293,16 +391,36 @@ class _TopUpFormState extends State<_TopUpForm> {
                   margin: const EdgeInsets.only(right: 7),
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(color: const Color(0xFF0D0F12), borderRadius: BorderRadius.circular(9), border: Border.all(color: _c.text == p.toString() ? FC.gold : FC.line)),
-                  child: Text('${p ~/ 1000}K', style: fs(10.4, color: _c.text == p.toString() ? FC.gold : FC.muted)),
+                  decoration: BoxDecoration(
+                      color: const Color(0xFF0D0F12),
+                      borderRadius: BorderRadius.circular(9),
+                      border: Border.all(
+                          color: _c.text == p.toString() ? FC.gold : FC.line)),
+                  child: Text('${p ~/ 1000}K',
+                      style: fs(10.4,
+                          color: _c.text == p.toString() ? FC.gold : FC.muted)),
                 ),
               ),
             ),
         ]),
         const SizedBox(height: 16),
-        FcField(label: 'Amount (UGX)', hint: 'Enter amount', icon: IconName.wallet, controller: _c, keyboard: TextInputType.number, error: _err, formatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(7)], onChanged: (_) => setState(() => _err = null), action: TextInputAction.done, onSubmitted: (_) => _go()),
+        FcField(
+            label: 'Amount (UGX)',
+            hint: 'Enter amount',
+            icon: IconName.wallet,
+            controller: _c,
+            keyboard: TextInputType.number,
+            error: _err,
+            formatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(7)
+            ],
+            onChanged: (_) => setState(() => _err = null),
+            action: TextInputAction.done,
+            onSubmitted: (_) => _go()),
         const SizedBox(height: 8),
-        FcText('Charged to MTN Mobile Money +256 700 ••• 456', kind: Tx.caption, color: FC.muted),
+        FcText('Charged to MTN Mobile Money +256 700 ••• 456',
+            kind: Tx.caption, color: FC.muted),
         const SizedBox(height: 18),
         FcButton('Top up', onTap: _go),
       ]);
@@ -311,7 +429,9 @@ class _TopUpFormState extends State<_TopUpForm> {
 // ---------------------------------------------------------------------------
 // Edit profile
 // ---------------------------------------------------------------------------
-Future<bool?> showEditProfileSheet(BuildContext context) => showFcSheet<bool>(context, title: 'Personal details', builder: (ctx) => const _ProfileForm());
+Future<bool?> showEditProfileSheet(BuildContext context) =>
+    showFcSheet<bool>(context,
+        title: 'Personal details', builder: (ctx) => const _ProfileForm());
 
 class _ProfileForm extends StatefulWidget {
   const _ProfileForm();
@@ -330,8 +450,13 @@ class _ProfileFormState extends State<_ProfileForm> {
       _ee = Validators.email(_e.text);
     });
     if (_ne != null || _ee != null) return;
-    await auth.updateProfile(_n.text.trim(), _e.text.trim());
-    if (mounted) Navigator.of(context).pop(true);
+    final result = await auth.updateProfile(_n.text.trim(), _e.text.trim());
+    if (!mounted) return;
+    if (!result.ok) {
+      setState(() => _ee = result.error);
+      return;
+    }
+    Navigator.of(context).pop(true);
   }
 
   @override
@@ -342,12 +467,28 @@ class _ProfileFormState extends State<_ProfileForm> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        FcField(label: 'Full name', hint: 'Joel Kato', icon: IconName.profile, controller: _n, error: _ne, action: TextInputAction.next),
+  Widget build(BuildContext context) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        FcField(
+            label: 'Full name',
+            hint: 'Joel Kato',
+            icon: IconName.profile,
+            controller: _n,
+            error: _ne,
+            action: TextInputAction.next),
         const SizedBox(height: 14),
-        FcField(label: 'Email address', hint: 'you@example.com', icon: IconName.orders, controller: _e, keyboard: TextInputType.emailAddress, error: _ee, action: TextInputAction.done, onSubmitted: (_) => _save()),
+        FcField(
+            label: 'Email address',
+            hint: 'you@example.com',
+            icon: IconName.orders,
+            controller: _e,
+            keyboard: TextInputType.emailAddress,
+            error: _ee,
+            action: TextInputAction.done,
+            onSubmitted: (_) => _save()),
         const SizedBox(height: 8),
-        FcText('Phone: ${maskPhone(auth.profile.phone)}', kind: Tx.caption, color: FC.muted),
+        FcText('Phone: ${maskPhone(auth.profile.phone)}',
+            kind: Tx.caption, color: FC.muted),
         const SizedBox(height: 18),
         FcButton('Save changes', onTap: _save),
       ]);
@@ -356,7 +497,9 @@ class _ProfileFormState extends State<_ProfileForm> {
 // ---------------------------------------------------------------------------
 // Add mobile-money method
 // ---------------------------------------------------------------------------
-Future<bool?> showAddPaySheet(BuildContext context) => showFcSheet<bool>(context, title: 'Add payment method', builder: (ctx) => const _PayForm());
+Future<bool?> showAddPaySheet(BuildContext context) =>
+    showFcSheet<bool>(context,
+        title: 'Add payment method', builder: (ctx) => const _PayForm());
 
 class _PayForm extends StatefulWidget {
   const _PayForm();
@@ -394,7 +537,8 @@ class _PayFormState extends State<_PayForm> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+  Widget build(BuildContext context) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Row(children: [
           for (final p in ['MTN Mobile Money', 'Airtel Money'])
             Expanded(
@@ -404,14 +548,29 @@ class _PayFormState extends State<_PayForm> {
                   margin: EdgeInsets.only(right: p.startsWith('MTN') ? 8 : 0),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(color: _prov == p ? al(FC.gold, .07) : FC.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: _prov == p ? FC.gold : FC.line)),
-                  child: Text(p, style: fs(10.88, color: _prov == p ? FC.gold : FC.muted, w: FontWeight.w700)),
+                  decoration: BoxDecoration(
+                      color: _prov == p ? al(FC.gold, .07) : FC.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border:
+                          Border.all(color: _prov == p ? FC.gold : FC.line)),
+                  child: Text(p,
+                      style: fs(10.88,
+                          color: _prov == p ? FC.gold : FC.muted,
+                          w: FontWeight.w700)),
                 ),
               ),
             ),
         ]),
         const SizedBox(height: 16),
-        FcField(label: 'Mobile money number', hint: '+256 700 000 000', icon: IconName.phone, controller: _c, keyboard: TextInputType.phone, error: _err, action: TextInputAction.done, onSubmitted: (_) => _save()),
+        FcField(
+            label: 'Mobile money number',
+            hint: '+256 700 000 000',
+            icon: IconName.phone,
+            controller: _c,
+            keyboard: TextInputType.phone,
+            error: _err,
+            action: TextInputAction.done,
+            onSubmitted: (_) => _save()),
         const SizedBox(height: 18),
         FcButton('Add method', onTap: _save),
       ]);
@@ -421,7 +580,8 @@ class _PayFormState extends State<_PayForm> {
 // Support chat (local scripted replies until a backend exists)
 // ---------------------------------------------------------------------------
 Future<void> showSupportChat(BuildContext context, {String? topic}) =>
-    showFcSheet<void>(context, title: 'Chat with support', builder: (ctx) => _Chat(topic: topic));
+    showFcSheet<void>(context,
+        title: 'Chat with support', builder: (ctx) => _Chat(topic: topic));
 
 class _Chat extends StatefulWidget {
   final String? topic;
@@ -432,14 +592,19 @@ class _Chat extends StatefulWidget {
 
 class _ChatState extends State<_Chat> {
   final _c = TextEditingController();
-  final List<(bool, String)> _msgs = [(false, 'Hi! I’m the FuelConnect support assistant. How can I help?')];
+  final List<(bool, String)> _msgs = [
+    (false, 'Hi! I’m the FuelOnDemand support assistant. How can I help?')
+  ];
 
   @override
   void initState() {
     super.initState();
     if (widget.topic != null) {
       _msgs.add((true, widget.topic!));
-      _msgs.add((false, 'Thanks — an agent will join this chat shortly. Meanwhile, tell us your order number if you have one.'));
+      _msgs.add((
+        false,
+        'Thanks — an agent will join this chat shortly. Meanwhile, tell us your order number if you have one.'
+      ));
     }
   }
 
@@ -448,7 +613,10 @@ class _ChatState extends State<_Chat> {
     if (t.isEmpty) return;
     setState(() {
       _msgs.add((true, t));
-      _msgs.add((false, 'Got it. A delivery support agent has been notified and will reply here.'));
+      _msgs.add((
+        false,
+        'Got it. A delivery support agent has been notified and will reply here.'
+      ));
       _c.clear();
     });
   }
@@ -460,7 +628,8 @@ class _ChatState extends State<_Chat> {
   }
 
   @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+  Widget build(BuildContext context) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         ConstrainedBox(
           constraints: BoxConstraints(maxHeight: vh(context) * .4),
           child: ListView(
@@ -468,13 +637,19 @@ class _ChatState extends State<_Chat> {
             children: [
               for (final m in _msgs)
                 Align(
-                  alignment: m.$1 ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment:
+                      m.$1 ? Alignment.centerRight : Alignment.centerLeft,
                   child: Container(
                     margin: const EdgeInsets.only(bottom: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 13, vertical: 10),
                     constraints: BoxConstraints(maxWidth: vw(context) * .7),
-                    decoration: BoxDecoration(color: m.$1 ? FC.gold : FC.surface2, borderRadius: BorderRadius.circular(14)),
-                    child: Text(m.$2, style: fs(12, color: m.$1 ? FC.onGold : FC.ink, h: 1.4)),
+                    decoration: BoxDecoration(
+                        color: m.$1 ? FC.gold : FC.surface2,
+                        borderRadius: BorderRadius.circular(14)),
+                    child: Text(m.$2,
+                        style:
+                            fs(12, color: m.$1 ? FC.onGold : FC.ink, h: 1.4)),
                   ),
                 ),
             ],
@@ -482,9 +657,17 @@ class _ChatState extends State<_Chat> {
         ),
         const SizedBox(height: 10),
         Row(children: [
-          Expanded(child: FcField(label: '', hint: 'Type your message', controller: _c, action: TextInputAction.send, onSubmitted: (_) => _send())),
+          Expanded(
+              child: FcField(
+                  label: '',
+                  hint: 'Type your message',
+                  controller: _c,
+                  action: TextInputAction.send,
+                  onSubmitted: (_) => _send())),
           const SizedBox(width: 10),
-          Padding(padding: const EdgeInsets.only(top: 19), child: FcButton.icon(IconName.chevron, onTap: _send)),
+          Padding(
+              padding: const EdgeInsets.only(top: 19),
+              child: FcButton.icon(IconName.chevron, onTap: _send)),
         ]),
       ]);
 }

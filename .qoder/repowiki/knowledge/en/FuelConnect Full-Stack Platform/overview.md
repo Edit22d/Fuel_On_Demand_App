@@ -1,0 +1,1 @@
+Top-level FuelConnect monorepo wiring a NestJS/Prisma backend API to a Flutter customer+rider frontend, with the app currently running on mocked data against a stable contract.

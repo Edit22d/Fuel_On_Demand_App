@@ -1,0 +1,232 @@
+{% extends "dashboard/base.html" %}
+{% load static fc %}
+{% block title %}Reports & analytics · FuelOnDemand{% endblock %}
+
+{% block content %}
+<div class="page-head-row">
+  <div>
+    <div class="eyebrow">Business</div>
+    <h2 class="page-title-lg">Reports &amp; analytics</h2>
+    <p class="page-sub">{{ period_label }} trading report for the {{ days }}-day window ending today — revenue, demand, network performance and bulk fuel reconciliation.</p>
+  </div>
+  <div class="head-actions">
+    {% for key, label, span in periods %}
+    <a class="btn btn-sm {% if key == period %}btn-gold{% else %}btn-ghost{% endif %}" href="?period={{ key }}">{{ label }}</a>
+    {% endfor %}
+    <a class="btn btn-ghost btn-sm" href="{% url 'console:reports_export' %}?period={{ period }}">{% icon "download" 14 %} CSV</a>
+  </div>
+</div>
+
+<div class="grid cols-3 mb-16">
+  <div class="stat-tile"><div class="k">Revenue</div><div class="v">{{ summary.revenue|short }}</div></div>
+  <div class="stat-tile"><div class="k">Orders</div><div class="v">{{ summary.orders }}</div></div>
+  <div class="stat-tile"><div class="k">Litres sold</div><div class="v">{{ summary.litres|floatformat:0 }}</div></div>
+  <div class="stat-tile"><div class="k">Avg order</div><div class="v">{{ summary.avg_order|money }}</div></div>
+  <div class="stat-tile"><div class="k">Delivery fees</div><div class="v">{{ summary.fees|short }}</div></div>
+  <div class="stat-tile"><div class="k">Completion</div><div class="v">{{ summary.completion }}%</div></div>
+</div>
+
+<div class="split">
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Revenue trend</h2>
+        <div class="card-sub">{{ period_label }} · paid orders only · best day {{ summary.best.label }} ({{ summary.best.revenue|short }})</div>
+      </div>
+      <span class="tag">{{ summary.delivered }} delivered</span>
+    </div>
+    <div class="card-body">
+      <div class="chart-wrap" data-chart="line" data-source="report-series" data-height="248" data-value-key="revenue"></div>
+      <div class="stat-tiles mt-16">
+        <div class="stat-tile"><div class="k">Avg / day</div><div class="v">{{ summary.daily_avg|short }}</div></div>
+        <div class="stat-tile"><div class="k">Rider pay</div><div class="v">{{ summary.rider_pay|short }}</div></div>
+        <div class="stat-tile"><div class="k">Cancelled</div><div class="v">{{ summary.cancelled }}</div></div>
+        <div class="stat-tile"><div class="k">Completion</div><div class="v">{{ summary.completion }}%</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Fuel mix</h2>
+        <div class="card-sub">Litres and revenue by product</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="donut-layout">
+        <div class="donut">
+          <div data-chart="donut" data-source="chart-fuel" data-value-key="count"></div>
+          <div class="donut-center"><b data-donut-total>—</b><span>Orders</span></div>
+        </div>
+        <div class="donut-legend">
+          {% for f in chart_fuel %}
+          <div class="donut-row">
+            <span class="legend-swatch" style="background:{{ f.color }}"></span>
+            <span class="name">{{ f.label }}</span>
+            <span class="tiny dim">{{ f.share }}%</span>
+            <span class="val">{{ f.litres|floatformat:0 }} L</span>
+          </div>
+          {% empty %}
+          <div class="empty">No fuel sales in this window.</div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="bars">
+        {% for p in chart_payments %}
+        <div class="bar-row">
+          <span class="bar-label">{{ p.label }}</span>
+          <span class="bar-value">{{ p.revenue|short }}</span>
+          <div class="bar-track"><div class="bar-fill" style="width:{{ p.count|pct:payment_total }}%"></div></div>
+        </div>
+        {% empty %}
+        <div class="empty">No payments in this window.</div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+</div>
+
+<section class="card mt-16">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">Daily breakdown</h2>
+      <div class="card-sub">{{ period_label }} · every day in the window</div>
+    </div>
+    <a class="card-link" href="{% url 'console:reports_export' %}?period={{ period }}">Download CSV ↗</a>
+  </div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr>
+          <th>Date</th><th class="num">Orders</th><th class="num">Delivered</th><th class="num">Cancelled</th>
+          <th class="num">Litres</th><th class="num">Revenue</th><th class="num">Avg order</th><th>Share</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows_desc %}
+        <tr>
+          <td><span class="strong">{{ r.label }}</span> <span class="tiny dim">{{ r.weekday }}</span></td>
+          <td class="num">{{ r.orders }}</td>
+          <td class="num">{{ r.delivered }}</td>
+          <td class="num">{{ r.cancelled }}</td>
+          <td class="num">{{ r.litres|floatformat:0 }}</td>
+          <td class="num strong">{{ r.revenue|money }}</td>
+          <td class="num">{{ r.avg_order|money }}</td>
+          <td style="min-width:120px">
+            <div class="bar-track"><div class="bar-fill" style="width:{{ r.revenue|pct:summary.best.revenue }}%"></div></div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8"><div class="empty">No trading data in this window.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="split mt-16">
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Station performance</h2>
+        <div class="card-sub">{{ period_label }} · revenue and orders by station</div>
+      </div>
+      <a class="card-link" href="{% url 'console:stations' %}">Network ↗</a>
+    </div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Station</th><th>Brand</th><th class="num">Orders</th><th class="num">Revenue</th><th>Share</th></tr></thead>
+        <tbody>
+          {% for s in stations %}
+          <tr>
+            <td class="strong">{{ s.name }}</td>
+            <td><span class="chip">{{ s.brand|title }}</span></td>
+            <td class="num">{{ s.orders }}</td>
+            <td class="num strong">{{ s.revenue|money }}</td>
+            <td style="min-width:110px">
+              <div class="bar-track"><div class="bar-fill" style="width:{{ s.revenue|pct:station_best }}%"></div></div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5"><div class="empty">No station revenue yet.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div>
+        <h2 class="card-title">Rider leaderboard</h2>
+        <div class="card-sub">Lifetime deliveries and payouts</div>
+      </div>
+      <a class="card-link" href="{% url 'console:riders' %}">Fleet ↗</a>
+    </div>
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>Rider</th><th>Plate</th><th class="num">Deliveries</th><th class="num">Payout</th></tr></thead>
+        <tbody>
+          {% for r in riders %}
+          <tr>
+            <td>
+              <div class="cell-user">
+                <span class="avatar">{{ r.name|initials }}</span>
+                <div>
+                  <div class="name">{{ r.name }}</div>
+                  <div class="sub mono">{{ r.phone }}</div>
+                </div>
+              </div>
+            </td>
+            <td class="mono">{{ r.plate|default:"—" }}</td>
+            <td class="num strong">{{ r.deliveries }}</td>
+            <td class="num">{{ r.payout|money }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4"><div class="empty">No completed deliveries yet.</div></td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<section class="card mt-16">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">Bulk fuel reconciliation</h2>
+      <div class="card-sub">Loaded at the depot vs received at the station · {{ period_label }}</div>
+    </div>
+    <span class="chip {% if recon_variance > 0 %}gold{% else %}ok{% endif %}">
+      {{ recon_variance }} L variance
+    </span>
+  </div>
+  <div class="table-wrap">
+    <table class="data">
+      <thead>
+        <tr><th>Station</th><th>Fuel</th><th class="num">Trips</th><th class="num">Loaded</th><th class="num">Received</th><th class="num">Variance</th><th class="num">Variance %</th></tr>
+      </thead>
+      <tbody>
+        {% for r in recon %}
+        <tr>
+          <td class="strong">{{ r.station }}</td>
+          <td><span class="chip">{{ r.fuel|title }}</span></td>
+          <td class="num">{{ r.trips }}</td>
+          <td class="num">{{ r.loaded|floatformat:0 }} L</td>
+          <td class="num">{{ r.received|floatformat:0 }} L</td>
+          <td class="num"><span class="chip {% if r.variance > 0 %}bad{% else %}ok{% endif %}">{{ r.variance }} L</span></td>
+          <td class="num">{{ r.variance_pct }}%</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7"><div class="empty">No reconciled bulk trips in this window.</div></td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{{ chart_series|json_script:"report-series" }}
+{{ chart_fuel|json_script:"chart-fuel" }}
+{% endblock %}

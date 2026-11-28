@@ -1,14 +1,16 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../core/core.dart';
 import '../services/auth_service.dart';
-import 'order_screens.dart' show VehicleTile;
+import '../services/tracking_service.dart';
+import 'browse_screens.dart';
 import 'sheets.dart';
 
 Widget _chevron() => Ic(IconName.chevron, size: 18, color: FC.dim);
 
-Widget _groupLabel(String t) => Padding(padding: const EdgeInsets.only(top: 26, bottom: 10), child: FcText(t, kind: Tx.label, color: FC.gold));
+Widget _groupLabel(String t) => Padding(
+    padding: const EdgeInsets.only(top: 26, bottom: 10),
+    child: FcText(t, kind: Tx.label, color: FC.gold));
 
 // ===========================================================================
 // Orders
@@ -36,12 +38,25 @@ class _OrdersScreenState extends State<OrdersScreen> {
         onTap: () => widget.go(Screen.orderDetail),
         child: Container(
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: FC.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: FC.line)),
+          decoration: BoxDecoration(
+              color: FC.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: FC.line)),
           child: Row(children: [
             const IconBox(IconName.fuel),
             const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText(o.station, kind: Tx.label), FcText('${o.date} · ${o.product}', kind: Tx.caption, color: FC.muted)])),
-            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [FcText(o.price, kind: Tx.label), Text('Completed', style: fs(8, color: FC.green, h: 1.5))]),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  FcText(o.station, kind: Tx.label),
+                  FcText('${o.date} · ${o.product}',
+                      kind: Tx.caption, color: FC.muted)
+                ])),
+            Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+              FcText(o.price, kind: Tx.label),
+              Text('Completed', style: fs(8, color: FC.green, h: 1.5))
+            ]),
           ]),
         ),
       );
@@ -49,19 +64,36 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     final q = _query.trim().toLowerCase();
-    final hist = kHistory.where((o) => q.isEmpty || '${o.station} ${o.product} ${o.date}'.toLowerCase().contains(q)).toList();
+    final hist = kHistory
+        .where((o) =>
+            q.isEmpty ||
+            '${o.station} ${o.product} ${o.date}'.toLowerCase().contains(q))
+        .toList();
     final showActive = _tab == 'Active' && q.isEmpty;
     return AppPage(
       nav: true,
       navCurrent: Screen.orders,
       go: widget.go,
-      header: PageHeader(title: 'Your orders', action: RoundAction(IconName.search, onTap: () => setState(() => _searching = !_searching))),
+      header: PageHeader(
+          title: 'Your orders',
+          goBack: () => app.backOr(Screen.home),
+          action: RoundAction(IconName.search,
+              onTap: () => setState(() => _searching = !_searching))),
       body: Narrow(gap: 0, padTop: 24, children: [
-        if (_searching) Padding(padding: const EdgeInsets.only(bottom: 16), child: SearchBox(hint: 'Search your orders', controller: _q, onChanged: (v) => setState(() => _query = v))),
+        if (_searching)
+          Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: SearchBox(
+                  hint: 'Search your orders',
+                  controller: _q,
+                  onChanged: (v) => setState(() => _query = v))),
         Container(
           padding: const EdgeInsets.all(4),
           margin: const EdgeInsets.only(bottom: 20),
-          decoration: BoxDecoration(color: FC.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: FC.line)),
+          decoration: BoxDecoration(
+              color: FC.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: FC.line)),
           child: Row(children: [
             for (final t in ['Active', 'Completed', 'Cancelled'])
               Expanded(
@@ -70,47 +102,110 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     alignment: Alignment.center,
-                    decoration: BoxDecoration(color: _tab == t ? FC.gold : null, borderRadius: BorderRadius.circular(8)),
-                    child: Text(t, style: fs(10.88, color: _tab == t ? FC.onGold : FC.muted, w: _tab == t ? FontWeight.w800 : FontWeight.w400, h: 1.2)),
+                    decoration: BoxDecoration(
+                        color: _tab == t ? FC.gold : null,
+                        borderRadius: BorderRadius.circular(8)),
+                    child: Text(t,
+                        style: fs(10.88,
+                            color: _tab == t ? FC.onGold : FC.muted,
+                            w: _tab == t ? FontWeight.w800 : FontWeight.w400,
+                            h: 1.2)),
                   ),
                 ),
               ),
           ]),
         ),
         if (showActive)
-          Tap(
-            onTap: () => widget.go(Screen.tracking),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 22),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [al(FC.gold, .07), FC.surface]),
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFF4C4322)),
-              ),
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const LivePill('ON THE WAY'), Text('12–16 min', style: fs(9.6, color: FC.muted))]),
-                const SizedBox(height: 18),
-                Row(children: [
-                  Container(width: 44, height: 44, decoration: BoxDecoration(color: FC.gold, borderRadius: BorderRadius.circular(12)), child: const Center(child: Ic(IconName.truck, color: Color(0xFF111111)))),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText('${app.productName} · ${app.litres}L', kind: Tx.subtitle), FcText('Stabex Kira Road', kind: Tx.caption, color: FC.muted)])),
-                  Ic(IconName.chevron, color: FC.muted),
-                ]),
-                const SizedBox(height: 14),
-                ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: .62, minHeight: 4, backgroundColor: FC.line, valueColor: AlwaysStoppedAnimation(FC.gold))),
-                const SizedBox(height: 14),
-                FcText('Marcus is heading to your location', kind: Tx.caption, color: FC.muted),
-              ]),
-            ),
+          ListenableBuilder(
+            listenable: tracker,
+            builder: (context, _) {
+              final t = tracker.order;
+              final eta = t == null ? '12–16 min' : '${t.etaMinutes} min';
+              final progress = t?.routeProgress ?? .62;
+              final driver = t?.driver?.name;
+              return Tap(
+                onTap: () => widget.go(Screen.tracking),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 22),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [al(FC.gold, .07), FC.surface]),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: const Color(0xFF4C4322)),
+                  ),
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(children: [
+                          Expanded(
+                              child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: LivePill(
+                                      t?.stage.label.toUpperCase() ??
+                                          'ON THE WAY'))),
+                          const SizedBox(width: 10),
+                          Text(eta,
+                              maxLines: 1, style: fs(9.6, color: FC.muted)),
+                        ]),
+                        const SizedBox(height: 18),
+                        Row(children: [
+                          Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                  color: FC.gold,
+                                  borderRadius: BorderRadius.circular(12)),
+                              child: const Center(
+                                  child: Ic(IconName.truck,
+                                      color: Color(0xFF111111)))),
+                          const SizedBox(width: 12),
+                          Expanded(
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                FcText('${app.productName} · ${app.litres}L',
+                                    kind: Tx.subtitle),
+                                FcText(livePrices.selected.name,
+                                    kind: Tx.caption, color: FC.muted),
+                              ])),
+                          Ic(IconName.chevron, color: FC.muted),
+                        ]),
+                        const SizedBox(height: 14),
+                        AnimatedProgress(progress, height: 4),
+                        const SizedBox(height: 14),
+                        FcText(
+                          driver == null
+                              ? 'We are matching you with a delivery partner.'
+                              : '$driver is heading to your location',
+                          kind: Tx.caption,
+                          color: FC.muted,
+                        ),
+                      ]),
+                ),
+              );
+            },
           ),
         if (_tab == 'Cancelled')
-          Padding(padding: EdgeInsets.symmetric(vertical: 40), child: FcText('You have no cancelled orders.', color: FC.muted, align: TextAlign.center))
+          Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: FcText('You have no cancelled orders.',
+                  color: FC.muted, align: TextAlign.center))
         else ...[
-          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const FcText('Recent orders', kind: Tx.title), TextAction('View all', onTap: () => setState(() => _tab = 'Completed'))]),
+          Row(children: [
+            const Expanded(
+                child: FcText('Recent orders', kind: Tx.title, maxLines: 1)),
+            TextAction('View all',
+                onTap: () => setState(() => _tab = 'Completed')),
+          ]),
           const SizedBox(height: 15),
           if (hist.isEmpty)
-            Padding(padding: EdgeInsets.symmetric(vertical: 24), child: FcText('No orders match your search.', color: FC.muted, align: TextAlign.center))
+            Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: FcText('No orders match your search.',
+                    color: FC.muted, align: TextAlign.center))
           else
             Column(children: gapped([for (final o in hist) _history(o)], 10)),
         ],
@@ -127,47 +222,88 @@ class OrderDetailScreen extends StatelessWidget {
   const OrderDetailScreen({super.key, required this.go});
   @override
   Widget build(BuildContext context) {
+    // Reads the same state the checkout wrote, so the invoice matches the order
+    // the backend will return instead of a hardcoded sample.
+    final station = livePrices.selected;
     return AppPage(
-      header: PageHeader(title: 'Order #FC-29841', goBack: () => app.backOr(Screen.orders)),
+      header: PageHeader(
+          title: 'Order ${app.orderIdLabel}',
+          goBack: () => app.backOr(Screen.orders)),
       body: Narrow(gap: 16, children: [
         Container(
           padding: const EdgeInsets.only(bottom: 17),
-          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: FC.line))),
+          decoration:
+              BoxDecoration(border: Border(bottom: BorderSide(color: FC.line))),
           child: Row(children: [
-            Container(width: 48, height: 48, decoration: BoxDecoration(shape: BoxShape.circle, color: FC.gold), child: const Center(child: Ic(IconName.check, size: 24, color: Color(0xFF111111)))),
+            Container(
+                width: 48,
+                height: 48,
+                decoration:
+                    BoxDecoration(shape: BoxShape.circle, color: FC.gold),
+                child: const Center(
+                    child: Ic(IconName.check,
+                        size: 24, color: Color(0xFF111111)))),
             const SizedBox(width: 13),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText('Delivered successfully', kind: Tx.subtitle), FcText('29 May 2025 · 7:42 PM', kind: Tx.caption, color: FC.muted)]),
+            Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const FcText('Delivered successfully', kind: Tx.subtitle),
+                    FcText('29 May 2025 · 7:42 PM',
+                        kind: Tx.caption, color: FC.muted),
+                  ]),
+            ),
           ]),
         ),
         Container(
           padding: const EdgeInsets.only(top: 18),
-          decoration: BoxDecoration(border: Border(top: BorderSide(color: FC.line))),
+          decoration:
+              BoxDecoration(border: Border(top: BorderSide(color: FC.line))),
           child: Row(children: [
-            ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/images/station-hero.jpg', width: 48, height: 48, fit: BoxFit.cover)),
+            ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: Image.asset('assets/images/station-hero.png',
+                    width: 48, height: 48, fit: BoxFit.cover)),
             const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText('Stabex Kira Road', kind: Tx.label), FcText('Verified FuelConnect partner', kind: Tx.caption, color: FC.muted)])),
-            Text('STABEX', style: fs(8, color: FC.gold, w: FontWeight.w900, ls: .96)),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  FcText(station.name, kind: Tx.label),
+                  FcText('Verified FuelOnDemand partner',
+                      kind: Tx.caption, color: FC.muted)
+                ])),
+            Text(station.brand.toUpperCase(),
+                style: fs(8, color: FC.gold, w: FontWeight.w900, ls: .96)),
           ]),
         ),
         Panel(
           padding: const EdgeInsets.all(17),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: gapped([
-            FcText('DELIVERY SUMMARY', kind: Tx.label, color: FC.gold),
-            const KvRow('Product', 'Premium petrol', size: 10.88),
-            const KvRow('Quantity', '35 litres', size: 10.88),
-            const KvRow('Vehicle', 'Toyota RAV4 · UBP 482M', size: 10.88),
-            const KvRow('Delivered to', 'Acacia Mall, Kisementi', size: 10.88),
-          ], 14)),
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: gapped([
+                FcText('DELIVERY SUMMARY', kind: Tx.label, color: FC.gold),
+                KvRow('Product', app.productName, size: 10.88),
+                KvRow('Quantity', '${app.litres} litres', size: 10.88),
+                KvRow('Vehicle',
+                    '${app.selectedVehicle.name} · ${app.selectedVehicle.plate}',
+                    size: 10.88),
+                KvRow('Delivered to', app.deliveryAddress, size: 10.88),
+              ], 14)),
         ),
         Panel(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: gapped([
-            const KvRow('Fuel', 'UGX 181,300'),
-            const KvRow('Delivery & service', 'UGX 10,500'),
-            const TotalRow('Total paid', 'UGX 191,800'),
-          ], 13)),
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: gapped([
+                KvRow('Fuel', 'UGX ${fmt(app.fuelTotal)}'),
+                KvRow('Delivery & service',
+                    'UGX ${fmt(AppState.deliveryFee + AppState.serviceFee)}'),
+                TotalRow('Total paid', 'UGX ${fmt(app.orderTotal)}'),
+              ], 13)),
         ),
         FcButton('Reorder fuel', onTap: () => go(Screen.fuel)),
-        FcButton('Get help with this order', variant: BV.outline, onTap: () => go(Screen.support)),
+        FcButton('Get help with this order',
+            variant: BV.outline, onTap: () => go(Screen.support)),
       ]),
     );
   }
@@ -184,13 +320,31 @@ class WalletScreen extends StatefulWidget {
 }
 
 class _WalletScreenState extends State<WalletScreen> {
+  /// Top-up runs outside [build] so the async gap is guarded by this State's
+  /// own `mounted` flag rather than a shadowed build context.
+  Future<void> _topUp() async {
+    final ok = await showTopUpSheet(context);
+    if (!mounted) return;
+    if (ok != true) return;
+    setState(() {});
+    toast(context,
+        'Wallet topped up. New balance UGX ${fmt(app.walletBalance)}.');
+  }
+
   Widget _action(IconName icon, String text, VoidCallback onTap) => Tap(
         onTap: onTap,
         child: Container(
           constraints: const BoxConstraints(minHeight: 40),
           padding: const EdgeInsets.symmetric(horizontal: 13),
-          decoration: BoxDecoration(color: al(Colors.white, .07), borderRadius: BorderRadius.circular(10), border: Border.all(color: al(Colors.white, .12))),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [Ic(icon, size: 16), const SizedBox(width: 7), Text(text, style: fs(9.92, w: FontWeight.w700))]),
+          decoration: BoxDecoration(
+              color: al(Colors.white, .07),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: al(Colors.white, .12))),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Ic(icon, size: 16),
+            const SizedBox(width: 7),
+            Text(text, style: fs(9.92, w: FontWeight.w700))
+          ]),
         ),
       );
 
@@ -200,7 +354,11 @@ class _WalletScreenState extends State<WalletScreen> {
       nav: true,
       navCurrent: Screen.wallet,
       go: widget.go,
-      header: PageHeader(title: 'Wallet', action: RoundAction(IconName.star, onTap: () => widget.go(Screen.rewards))),
+      header: PageHeader(
+          title: 'Payments',
+          goBack: () => app.backOr(Screen.home),
+          action: RoundAction(IconName.star,
+              onTap: () => widget.go(Screen.rewards))),
       body: ContentSection(maxWide: 720, children: [
         Container(
           clipBehavior: Clip.antiAlias,
@@ -208,35 +366,57 @@ class _WalletScreenState extends State<WalletScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: const Color(0xFF4F4421)),
-            boxShadow: [BoxShadow(color: al(Colors.black, .35), blurRadius: 55, offset: const Offset(0, 22))],
-            gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF26200E), Color(0xFF121316)], stops: [0, .62]),
+            boxShadow: [
+              BoxShadow(
+                  color: al(Colors.black, .35),
+                  blurRadius: 55,
+                  offset: const Offset(0, 22))
+            ],
+            gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF26200E), Color(0xFF121316)],
+                stops: [0, .62]),
           ),
           child: Stack(children: [
-            const Positioned.fill(child: Glow(fx: .88, fy: 0, colors: [Color(0x38F5C72E), Color(0x00F5C72E)], stops: [0, .36])),
+            const Positioned.fill(
+                child: Glow(
+                    fx: .88,
+                    fy: 0,
+                    colors: [Color(0x38F5C72E), Color(0x00F5C72E)],
+                    stops: [0, .36])),
             Padding(
               padding: const EdgeInsets.all(24),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(minHeight: 217),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Logo(compact: true), Ic(IconName.wallet, color: FC.gold)]),
-                    const SizedBox(height: 33),
-                    const FcText('AVAILABLE BALANCE', kind: Tx.caption),
-                    const SizedBox(height: 8),
-                    Text('UGX ${fmt(app.walletBalance)}', style: fs(cl(context, 32, 7, 44.8), w: FontWeight.w800, ls: -1.6, h: 1.08)),
-                  ]),
-                  const SizedBox(height: 20),
-                  Wrap(spacing: 10, runSpacing: 10, children: [
-                    _action(IconName.plus, 'Top up', () async {
-                      final ok = await showTopUpSheet(context);
-                      if (ok == true && mounted) {
-                        setState(() {});
-                        toast(context, 'Wallet topped up. New balance UGX ${fmt(app.walletBalance)}.');
-                      }
-                    }),
-                    _action(IconName.card, 'Methods', () => widget.go(Screen.payment)),
-                  ]),
-                ]),
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Logo(compact: true),
+                                  Ic(IconName.wallet, color: FC.gold)
+                                ]),
+                            const SizedBox(height: 33),
+                            const FcText('AVAILABLE BALANCE', kind: Tx.caption),
+                            const SizedBox(height: 8),
+                            Text('UGX ${fmt(app.walletBalance)}',
+                                style: fs(cl(context, 32, 7, 44.8),
+                                    w: FontWeight.w800, ls: -1.6, h: 1.08)),
+                          ]),
+                      const SizedBox(height: 20),
+                      Wrap(spacing: 10, runSpacing: 10, children: [
+                        _action(IconName.plus, 'Top up', _topUp),
+                        _action(IconName.card, 'Methods',
+                            () => widget.go(Screen.payment)),
+                      ]),
+                    ]),
               ),
             ),
           ]),
@@ -247,26 +427,51 @@ class _WalletScreenState extends State<WalletScreen> {
           child: Panel(
             padding: const EdgeInsets.all(14),
             child: Row(children: [
-              Container(width: 44, height: 44, decoration: BoxDecoration(shape: BoxShape.circle, color: FC.gold), child: const Center(child: Ic(IconName.star, color: Color(0xFF111111)))),
+              Container(
+                  width: 44,
+                  height: 44,
+                  decoration:
+                      BoxDecoration(shape: BoxShape.circle, color: FC.gold),
+                  child: const Center(
+                      child: Ic(IconName.star, color: Color(0xFF111111)))),
               const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                FcText('GOLD MEMBER · ${fmt(app.points)} POINTS', kind: Tx.label),
-                FcText('${fmt(math.max(0, AppState.nextTierPoints - app.points))} points to your next fuel reward', kind: Tx.caption, color: FC.muted),
-              ])),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    FcText('GOLD MEMBER · ${fmt(app.points)} POINTS',
+                        kind: Tx.label),
+                    FcText(
+                        '${fmt(math.max(0, AppState.nextTierPoints - app.points))} points to your next fuel reward',
+                        kind: Tx.caption,
+                        color: FC.muted),
+                  ])),
               Ic(IconName.chevron, color: FC.muted),
             ]),
           ),
         ),
-        SectionHeading('Recent activity', trailing: TextAction('Statements', onTap: () => toast(context, 'Statements will be available once the backend is connected.'))),
+        SectionHeading('Recent activity',
+            trailing: TextAction('Statements',
+                onTap: () =>
+                    toast(context, 'Statement export is coming soon.'))),
         for (final t in app.txs)
           Container(
             constraints: const BoxConstraints(minHeight: 66),
-            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: FC.line))),
+            decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: FC.line))),
             child: Row(children: [
-              IconBox(t.amount < 0 ? IconName.fuel : IconName.wallet, color: t.amount < 0 ? FC.gold : FC.green),
+              IconBox(t.amount < 0 ? IconName.fuel : IconName.wallet,
+                  color: t.amount < 0 ? FC.gold : FC.green),
               const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText(t.title, kind: Tx.label), FcText(t.subtitle, kind: Tx.caption, color: FC.muted)])),
-              Text('UGX ${t.amount < 0 ? '−' : '+'}${fmt(t.amount.abs())}', style: fs(10.88, w: FontWeight.w700)),
+              Expanded(
+                  child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                    FcText(t.title, kind: Tx.label),
+                    FcText(t.subtitle, kind: Tx.caption, color: FC.muted)
+                  ])),
+              Text('UGX ${t.amount < 0 ? '−' : '+'}${fmt(t.amount.abs())}',
+                  style: fs(10.88, w: FontWeight.w700)),
             ]),
           ),
       ]),
@@ -285,14 +490,23 @@ class RewardsScreen extends StatefulWidget {
 }
 
 class _RewardsScreenState extends State<RewardsScreen> {
-  static const _rewards = [('5L fuel credit', 1500), ('Free delivery', 800), ('10L fuel credit', 2800), ('UGX 20K off', 2000)];
+  static const _rewards = [
+    ('5L fuel credit', 1500),
+    ('Free delivery', 800),
+    ('10L fuel credit', 2800),
+    ('UGX 20K off', 2000)
+  ];
 
   Future<void> _redeem(String name, int cost) async {
     if (app.points < cost) {
-      toast(context, 'You need ${fmt(cost - app.points)} more points for this reward.');
+      toast(context,
+          'You need ${fmt(cost - app.points)} more points for this reward.');
       return;
     }
-    final ok = await confirmDialog(context, title: 'Redeem $name?', body: 'This will use ${fmt(cost)} of your ${fmt(app.points)} points.', confirm: 'Redeem');
+    final ok = await confirmDialog(context,
+        title: 'Redeem $name?',
+        body: 'This will use ${fmt(cost)} of your ${fmt(app.points)} points.',
+        confirm: 'Redeem');
     if (ok && mounted) {
       setState(() => app.points -= cost);
       toast(context, '$name redeemed. It will apply to your next order.');
@@ -304,8 +518,14 @@ class _RewardsScreenState extends State<RewardsScreen> {
     final p = app.points;
     final left = math.max(0, AppState.nextTierPoints - p);
     return AppPage(
-      background: const Glow(fx: .5, fy: .08, colors: [Color(0x14F5C72E), Color(0x00F5C72E)], stops: [0, .28]),
-      header: PageHeader(title: 'FuelConnect Rewards', goBack: () => app.backOr(Screen.wallet)),
+      background: const Glow(
+          fx: .5,
+          fy: .08,
+          colors: [Color(0x14F5C72E), Color(0x00F5C72E)],
+          stops: [0, .28]),
+      header: PageHeader(
+          title: 'FuelOnDemand Rewards',
+          goBack: () => app.backOr(Screen.wallet)),
       body: Narrow(gap: 18, children: [
         Container(
           clipBehavior: Clip.antiAlias,
@@ -313,20 +533,47 @@ class _RewardsScreenState extends State<RewardsScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(28),
             border: Border.all(color: const Color(0xFF5C4C1C)),
-            gradient: const LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF201D13), Color(0xFF101214)]),
+            gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF201D13), Color(0xFF101214)]),
           ),
           child: Stack(children: [
-            const Positioned.fill(child: Glow(fx: .8, fy: .15, colors: [Color(0x2EF5C72E), Color(0x00F5C72E)], stops: [0, .30])),
+            const Positioned.fill(
+                child: Glow(
+                    fx: .8,
+                    fy: .15,
+                    colors: [Color(0x2EF5C72E), Color(0x00F5C72E)],
+                    stops: [0, .30])),
             Padding(
               padding: const EdgeInsets.all(24),
-              child: Column(mainAxisAlignment: MainAxisAlignment.center, children: gapped([
-                Text('GOLD', style: fs(9.6, color: FC.gold, w: FontWeight.w900, ls: 2.4)),
-                Ic(IconName.star, size: 36, color: FC.gold),
-                FcText(fmt(p), kind: Tx.display, color: FC.gold),
-                FcText('AVAILABLE POINTS', kind: Tx.caption, color: FC.gold),
-                ClipRRect(borderRadius: BorderRadius.circular(5), child: LinearProgressIndicator(value: (p / AppState.nextTierPoints).clamp(0, 1).toDouble(), minHeight: 5, backgroundColor: FC.line, valueColor: AlwaysStoppedAnimation(FC.gold))),
-                FcText(left == 0 ? 'You have reached Platinum · Earn 1 point per UGX 1,000' : '${fmt(left)} points until Platinum · Earn 1 point per UGX 1,000', kind: Tx.caption, color: FC.gold, align: TextAlign.center),
-              ], 12)),
+              child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: gapped([
+                    Text('GOLD',
+                        style: fs(9.6,
+                            color: FC.gold, w: FontWeight.w900, ls: 2.4)),
+                    Ic(IconName.star, size: 36, color: FC.gold),
+                    FcText(fmt(p), kind: Tx.display, color: FC.gold),
+                    FcText('AVAILABLE POINTS',
+                        kind: Tx.caption, color: FC.gold),
+                    ClipRRect(
+                        borderRadius: BorderRadius.circular(5),
+                        child: LinearProgressIndicator(
+                            value: (p / AppState.nextTierPoints)
+                                .clamp(0, 1)
+                                .toDouble(),
+                            minHeight: 5,
+                            backgroundColor: FC.line,
+                            valueColor: AlwaysStoppedAnimation(FC.gold))),
+                    FcText(
+                        left == 0
+                            ? 'You have reached Platinum · Earn 1 point per UGX 1,000'
+                            : '${fmt(left)} points until Platinum · Earn 1 point per UGX 1,000',
+                        kind: Tx.caption,
+                        color: FC.gold,
+                        align: TextAlign.center),
+                  ], 12)),
             ),
           ]),
         ),
@@ -342,14 +589,23 @@ class _RewardsScreenState extends State<RewardsScreen> {
                   child: Container(
                     constraints: const BoxConstraints(minHeight: 120),
                     padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(color: FC.surface, borderRadius: BorderRadius.circular(18), border: Border.all(color: FC.line)),
-                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Ic(IconName.drop, color: FC.gold),
-                      const SizedBox(height: 8),
-                      FcText(r.$1, kind: Tx.label, color: FC.gold, align: TextAlign.center),
-                      const SizedBox(height: 8),
-                      Text('${fmt(r.$2)} pts', style: fs(9.28, color: FC.muted)),
-                    ]),
+                    decoration: BoxDecoration(
+                        color: FC.surface,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: FC.line)),
+                    child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Ic(IconName.drop, color: FC.gold),
+                          const SizedBox(height: 8),
+                          FcText(r.$1,
+                              kind: Tx.label,
+                              color: FC.gold,
+                              align: TextAlign.center),
+                          const SizedBox(height: 8),
+                          Text('${fmt(r.$2)} pts',
+                              style: fs(9.28, color: FC.muted)),
+                        ]),
                   ),
                 ),
               ),
@@ -357,12 +613,16 @@ class _RewardsScreenState extends State<RewardsScreen> {
         }),
         Panel(
           padding: const EdgeInsets.all(17),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: gapped([
-            FcText('HOW IT WORKS', kind: Tx.label, color: FC.gold),
-            const KvRow('Order from any partner', 'Earn points', size: 10.88),
-            const KvRow('Refer a friend', '+500 points', size: 10.88),
-            const KvRow('Complete 5 deliveries', '+1,000 points', size: 10.88),
-          ], 14)),
+          child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: gapped([
+                FcText('HOW IT WORKS', kind: Tx.label, color: FC.gold),
+                const KvRow('Order from any partner', 'Earn points',
+                    size: 10.88),
+                const KvRow('Refer a friend', '+500 points', size: 10.88),
+                const KvRow('Complete 5 deliveries', '+1,000 points',
+                    size: 10.88),
+              ], 14)),
         ),
       ]),
     );
@@ -386,11 +646,15 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       nav: true,
       navCurrent: Screen.notifications,
       go: widget.go,
-      header: PageHeader(title: 'Notifications', action: TextAction('Mark read', onTap: () => setState(() {
-            for (final n in app.notices) {
-              n.fresh = false;
-            }
-          }))),
+      header: PageHeader(
+          title: 'Notifications',
+          goBack: () => app.backOr(Screen.home),
+          action: TextAction('Mark read',
+              onTap: () => setState(() {
+                    for (final n in app.notices) {
+                      n.fresh = false;
+                    }
+                  }))),
       body: ContentSection(children: [
         FcText('TODAY', kind: Tx.label, color: FC.gold),
         const SizedBox(height: 10),
@@ -402,13 +666,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 16),
-              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: FC.line))),
+              decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: FC.line))),
               child: Stack(clipBehavior: Clip.none, children: [
-                if (n.fresh) Positioned(left: -8, top: 6, child: Container(width: 5, height: 5, decoration: BoxDecoration(shape: BoxShape.circle, color: FC.gold))),
+                if (n.fresh)
+                  Positioned(
+                      left: -8,
+                      top: 6,
+                      child: Container(
+                          width: 5,
+                          height: 5,
+                          decoration: BoxDecoration(
+                              shape: BoxShape.circle, color: FC.gold))),
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   IconBox(n.icon),
                   const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText(n.title, kind: Tx.label), FcText(n.body, kind: Tx.caption, color: FC.muted)])),
+                  Expanded(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                        FcText(n.title, kind: Tx.label),
+                        FcText(n.body, kind: Tx.caption, color: FC.muted)
+                      ])),
                   const SizedBox(width: 12),
                   Text(n.time, style: fs(8.8, color: FC.dim)),
                 ]),
@@ -419,7 +698,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 }
-
 
 // ===========================================================================
 // Settings / profile
@@ -432,12 +710,15 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  Widget _row(IconName icon, String label, {VoidCallback? onTap, Widget? trailing, bool last = false}) => Tap(
+  Widget _row(IconName icon, String label,
+          {VoidCallback? onTap, Widget? trailing, bool last = false}) =>
+      Tap(
         onTap: onTap,
         child: Container(
           constraints: const BoxConstraints(minHeight: 57),
           padding: const EdgeInsets.symmetric(horizontal: 14),
-          decoration: BoxDecoration(border: last ? null : Border(bottom: BorderSide(color: FC.line))),
+          decoration: BoxDecoration(
+              border: last ? null : Border(bottom: BorderSide(color: FC.line))),
           child: Row(children: [
             Ic(icon, color: FC.gold),
             const SizedBox(width: 12),
@@ -449,7 +730,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _group(List<Widget> rows) => Container(
         clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(color: FC.surface, borderRadius: BorderRadius.circular(18), border: Border.all(color: FC.line)),
+        decoration: BoxDecoration(
+            color: FC.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: FC.line)),
         child: Column(children: rows),
       );
 
@@ -460,37 +744,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
       nav: true,
       navCurrent: Screen.profile,
       go: widget.go,
-      header: const PageHeader(title: 'Settings'),
+      header:
+          PageHeader(title: 'Account', goBack: () => app.backOr(Screen.home)),
       body: Narrow(gap: 0, padTop: 24, children: [
         Container(
           padding: const EdgeInsets.only(top: 6, bottom: 25),
-          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: FC.line))),
+          decoration:
+              BoxDecoration(border: Border(bottom: BorderSide(color: FC.line))),
           child: Row(children: [
-            Container(width: 58, height: 58, alignment: Alignment.center, decoration: BoxDecoration(shape: BoxShape.circle, color: FC.surface2, border: Border.all(color: const Color(0xFF6B5A1E))), child: Text(pr.initials, style: fs(14, color: FC.gold, w: FontWeight.w800, h: 1))),
+            Container(
+                width: 58,
+                height: 58,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: FC.surface2,
+                    border: Border.all(color: const Color(0xFF6B5A1E))),
+                child: Text(pr.initials,
+                    style: fs(14, color: FC.gold, w: FontWeight.w800, h: 1))),
             const SizedBox(width: 13),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [FcText(pr.name, kind: Tx.title), FcText('${pr.email} · ${maskPhone(pr.phone)}', kind: Tx.caption, color: FC.muted)])),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  FcText(pr.name, kind: Tx.title),
+                  FcText('${pr.email} · ${maskPhone(pr.phone)}',
+                      kind: Tx.caption, color: FC.muted)
+                ])),
             Tap(
               onTap: () async {
                 await showEditProfileSheet(context);
                 if (mounted) setState(() {});
               },
-              child: Padding(padding: const EdgeInsets.all(6), child: Ic(IconName.chevron, color: FC.muted)),
+              child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: Ic(IconName.chevron, color: FC.muted)),
             ),
           ]),
         ),
         _groupLabel('PREFERENCES'),
         _group([
-          _row(IconName.bell, 'Push notifications', trailing: FcToggle(on: app.pushOn, onTap: () => setState(() => app.pushOn = !app.pushOn))),
-          _row(IconName.location, 'Location services', trailing: FcToggle(on: app.locationOn, onTap: () => setState(() => app.locationOn = !app.locationOn))),
-          _row(IconName.star, 'Dark mode', trailing: FcToggle(on: app.isDark, onTap: () => setState(() => app.toggleTheme()))),
-          _row(IconName.card, 'Wallet & payment methods', onTap: () => widget.go(Screen.wallet)),
-          _row(IconName.star, 'Rewards & referrals', onTap: () => widget.go(Screen.rewards), last: true),
+          _row(IconName.bell, 'Push notifications',
+              trailing: FcToggle(
+                  on: app.pushOn,
+                  onTap: () => setState(() => app.pushOn = !app.pushOn))),
+          _row(IconName.location, 'Location services',
+              trailing: FcToggle(
+                  on: app.locationOn,
+                  onTap: () =>
+                      setState(() => app.locationOn = !app.locationOn))),
+          _row(IconName.star, 'Dark mode',
+              trailing: FcToggle(
+                  on: app.isDark,
+                  onTap: () => setState(() => app.toggleTheme()))),
+          _row(IconName.card, 'Wallet & payment methods',
+              onTap: () => widget.go(Screen.wallet)),
+          _row(IconName.star, 'Rewards & referrals',
+              onTap: () => widget.go(Screen.rewards), last: true),
         ]),
         _groupLabel('DELIVERY'),
         _group([
-          _row(IconName.location, 'Saved places', onTap: () => widget.go(Screen.addresses)),
-          _row(IconName.truck, 'My vehicles', onTap: () => widget.go(Screen.vehicles)),
-          _row(IconName.bell, 'Notification centre', onTap: () => widget.go(Screen.notifications), last: true),
+          _row(IconName.location, 'Saved places',
+              onTap: () => widget.go(Screen.addresses)),
+          _row(IconName.truck, 'My vehicles',
+              onTap: () => widget.go(Screen.vehicles)),
+          _row(IconName.bell, 'Notification centre',
+              onTap: () => widget.go(Screen.notifications), last: true),
         ]),
         _groupLabel('ACCOUNT & SECURITY'),
         _group([
@@ -498,16 +817,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             await showEditProfileSheet(context);
             if (mounted) setState(() {});
           }),
-          _row(IconName.shield, 'Safety & security', onTap: () => widget.go(Screen.safety)),
-          _row(IconName.phone, 'Help & support', onTap: () => widget.go(Screen.support), last: true),
+          _row(IconName.shield, 'Safety & security',
+              onTap: () => widget.go(Screen.safety)),
+          _row(IconName.phone, 'Help & support',
+              onTap: () => widget.go(Screen.support), last: true),
         ]),
         const SizedBox(height: 26),
-        FcButton('Log out', variant: BV.outline, onTap: () {
-          auth.signOut();
+        FcButton('Log out', variant: BV.outline, onTap: () async {
+          await auth.signOut();
+          if (!context.mounted) return;
           widget.go(Screen.login, root: true);
         }),
         const SizedBox(height: 18),
-        FcText('FuelConnect version 1.0.0', kind: Tx.caption, color: FC.muted, align: TextAlign.center),
+        FcText('FuelOnDemand version 1.0.0',
+            kind: Tx.caption, color: FC.muted, align: TextAlign.center),
       ]),
     );
   }

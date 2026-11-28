@@ -1,0 +1,129 @@
+{% extends "dashboard/base.html" %}
+{% load static fc %}
+{% block title %}Stations · FuelOnDemand{% endblock %}
+
+{% block content %}
+<div class="page-head-row">
+  <div>
+    <div class="eyebrow">Network</div>
+    <h2 class="page-title-lg">Stations</h2>
+    <p class="page-sub">Forecourt prices, availability and volume across Kampala. Price edits are audited and picked up by the app instantly.</p>
+  </div>
+  <div class="head-actions">
+    <a class="btn btn-ghost" href="{% url 'console:orders' %}?status=active">{% icon "orders" 16 %} Live orders</a>
+    <button class="btn btn-gold" type="button" data-toggle-open="#station-form">{% icon "plus" 16 %} Add station</button>
+  </div>
+</div>
+
+<section class="card" id="station-form" style="display:none;margin-bottom:18px">
+  <div class="card-head">
+    <div>
+      <h2 class="card-title">Add a forecourt</h2>
+      <div class="card-sub">New stations appear in the customer app as soon as prices are set.</div>
+    </div>
+  </div>
+  <div class="card-body">
+    <form method="post" action="{% url 'console:stations' %}" class="form-card">
+      {% csrf_token %}
+      <div class="form-row">
+        <div class="field">
+          <label class="label" for="name">Station name</label>
+          <input class="input" id="name" name="name" placeholder="Stabex Ntinda" required>
+        </div>
+        <div class="field">
+          <label class="label" for="brand">Brand</label>
+          <select class="select" id="brand" name="brand">
+            {% for value, label in brands %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label" for="address">Address</label>
+        <input class="input" id="address" name="address" placeholder="Ntinda Road, Kampala" required>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label class="label" for="lat">Latitude</label>
+          <input class="input" id="lat" name="lat" value="0.3476" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label class="label" for="lng">Longitude</label>
+          <input class="input" id="lng" name="lng" value="32.5825" inputmode="decimal">
+        </div>
+      </div>
+      <div class="row" style="justify-content:flex-end">
+        <button class="btn btn-gold" type="submit">{% icon "check" 16 %} Save station</button>
+      </div>
+    </form>
+  </div>
+</section>
+
+<div class="station-grid">
+  {% for station in stations %}
+  <section class="card station-card" id="{{ station.slug }}">
+    <div class="card-head">
+      <div class="cell-user">
+        <span class="avatar">{{ station.name|first_letter }}</span>
+        <div>
+          <div class="name">{{ station.name }}</div>
+          <div class="sub">{{ station.address }}</div>
+        </div>
+      </div>
+      <span class="chip {{ station.brand|brand_tone }}">{{ station.get_brand_display }}</span>
+    </div>
+
+    <div class="station-hero" style="background-image:url('{% static 'dashboard/img/station-card.jpg' %}')">
+      <span class="tag brand-tag">{% if station.is_active %}<span class="pulse-dot"></span> Open{% else %}Closed{% endif %}</span>
+    </div>
+
+    <div class="card-body">
+      <div class="stat-tiles">
+        <div class="stat-tile"><div class="k">Orders 7d</div><div class="v">{{ station.orders_7d }}</div></div>
+        <div class="stat-tile"><div class="k">Revenue 7d</div><div class="v">{{ station.revenue_7d|short }}</div></div>
+        <div class="stat-tile"><div class="k">Rating</div><div class="v">★ {{ station.rating|floatformat:1 }}</div></div>
+      </div>
+
+      <form class="mt-16" method="post" action="{% url 'console:station_prices' station.slug %}">
+        {% csrf_token %}
+        {% for value, label in fuel_types %}
+        <div class="price-row">
+          <span class="fuel">{{ label }}</span>
+          <input class="input" name="price_{{ value }}" value="{{ station|price_for:value }}" inputmode="numeric" aria-label="{{ label }} price">
+          <span class="tiny dim">UGX / L</span>
+        </div>
+        {% endfor %}
+        <button class="btn btn-ghost btn-sm btn-block mt-16" type="submit">{% icon "check" 14 %} Save prices</button>
+      </form>
+
+      <div class="row-between mt-16">
+        <span class="tiny dim">{{ station.service_radius_km }} km radius · {% if station.opens_24h %}24 h{% else %}Daylight{% endif %}</span>
+        <form method="post" action="{% url 'console:station_toggle' station.slug %}" data-confirm="Toggle {{ station.name }} availability?">
+          {% csrf_token %}
+          <button class="btn btn-sm {% if station.is_active %}btn-danger{% else %}btn-gold{% endif %}" type="submit">
+            {% if station.is_active %}Close{% else %}Open{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+  </section>
+  {% empty %}
+  <div class="card pad"><div class="empty">No stations yet — add the first forecourt.</div></div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  (function () {
+    var btn = document.querySelector("[data-toggle-open]");
+    if (!btn) return;
+    btn.addEventListener("click", function () {
+      var panel = document.querySelector(btn.dataset.toggleOpen);
+      if (!panel) return;
+      panel.style.display = panel.style.display === "none" ? "" : "none";
+      var input = panel.querySelector("input[name=name]");
+      if (input && panel.style.display !== "none") input.focus();
+    });
+  })();
+</script>
+{% endblock %}
