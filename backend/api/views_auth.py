@@ -11,6 +11,9 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
 from django.utils import timezone
+from google.auth import exceptions as google_exceptions
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token as google_id_token
 
 from core.models import AuditEvent, OtpCode, Role, User
 from core.services import audit, issue_otp, notify, send_otp_notification, verify_otp
@@ -60,6 +63,98 @@ def _issue_and_deliver(user: User, purpose: str, *, respect_cooldown: bool = Tru
             "sent": False,
         }
     return _otp_response(user.phone, purpose, code, delivery)
+
+
+def _verify_google_id_token(raw_token: str) -> dict | None:
+    if not settings.GOOGLE_OAUTH_CLIENT_IDS:
+        return None
+    try:
+        unverified = jwt.decode(raw_token, options={"verify_signature": False})
+        audience = unverified.get("aud")
+        if audience not in settings.GOOGLE_OAUTH_CLIENT_IDS:
+            return None
+        claims = google_id_token.verify_oauth2_token(
+            raw_token,
+            google_requests.Request(),
+            audience=audience,
+            clock_skew_in_seconds=30,
+        )
+    except (jwt.PyJWTError, ValueError, KeyError, google_exceptions.GoogleAuthError):
+        return None
+    return claims if claims.get("email_verified") is True else None
+
+
+@endpoint
+def google_login(request):
+    if not require_method(request, "POST"):
+        return fail("Method not allowed.", 405)
+    data = read_json(request)
+    raw_token = str(data.get("id_token") or "").strip()
+    if not raw_token:
+        return fail("A Google sign-in token is required.", 422)
+    if not settings.GOOGLE_OAUTH_CLIENT_IDS:
+        return fail("Google sign-in is not configured on the server.", 503)
+
+    throttle("google", client_ip(request) or "anonymous", 10, 900)
+    claims = _verify_google_id_token(raw_token)
+    if not claims:
+        return fail("Google sign-in could not be verified. Please try again.", 401)
+
+    google_sub = str(claims.get("sub") or "").strip()
+    email = str(claims.get("email") or "").strip().lower()
+    name = str(claims.get("name") or email.partition("@")[0] or "Google User").strip()[:120]
+    if not google_sub or not email or len(name) < 2:
+        return fail("Google did not return the account details needed to sign in.", 422)
+
+    user = User.objects.filter(google_sub=google_sub).first()
+    if user is None:
+        user = User.objects.filter(email__iexact=email).first()
+        if user is not None:
+            if user.google_sub and user.google_sub != google_sub:
+                return fail("This email is linked to a different Google account.", 409)
+            changed = []
+            if not user.google_sub:
+                user.google_sub = google_sub
+                changed.append("google_sub")
+            if not user.is_verified:
+                user.is_verified = True
+                changed.append("is_verified")
+            if changed:
+                user.save(update_fields=changed)
+            audit(None, "api.google_linked", target=user.phone, actor=user)
+        else:
+            raw_phone = data.get("phone")
+            if not raw_phone:
+                return ok({"phone_required": True, "email": email, "name": name})
+            phone = normalize_phone(str(raw_phone))
+            if len(phone) < 12:
+                return fail("Enter a valid Ugandan phone number.", 422, {"phone": ["Enter a valid Ugandan phone number."]})
+            if User.objects.filter(phone=phone).exists():
+                return fail("An account with this number already exists. Try signing in.", 422, {"phone": ["Already registered."]})
+            try:
+                with transaction.atomic():
+                    user = User.objects.create_user(
+                        phone=phone,
+                        password=None,
+                        name=name,
+                        email=email,
+                        google_sub=google_sub,
+                        is_verified=True,
+                    )
+                    audit(None, "customer.google_registered", target=phone, actor=user)
+                    notify(user, "Welcome to FuelOnDemand", "Your account was created securely with Google.")
+            except IntegrityError:
+                return fail("An account with these details already exists. Try signing in.", 422)
+
+    if user.is_suspended or not user.is_active:
+        return fail("This account has been suspended. Contact support on " + FC["support_phone"], 403)
+    if user.role == Role.RIDER and getattr(user, "rider", None) and user.rider.status != "approved":
+        return fail(f"Your rider application is {user.rider.get_status_display().lower()}.", 403)
+
+    user.last_login = timezone.now()
+    user.save(update_fields=["last_login"])
+    audit(None, "api.google_login", target=user.phone, actor=user)
+    return ok({"token": issue_token(user), "user": user_payload(user)})
 
 
 @endpoint

@@ -166,6 +166,9 @@ LOGIN_URL = "/console/login/"
 LOGIN_REDIRECT_URL = "/console/"
 LOGOUT_REDIRECT_URL = "/console/login/"
 
+# Accepted Google OAuth client IDs. ID tokens from any other app are rejected.
+GOOGLE_OAUTH_CLIENT_IDS = env_list("GOOGLE_OAUTH_CLIENT_IDS")
+
 # --------------------------------------------------------------------------- logging
 LOGS_DIR = BASE_DIR / "logs"
 LOGS_DIR.mkdir(exist_ok=True)

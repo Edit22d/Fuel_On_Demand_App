@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+import jwt
 from django.core import mail
 from django.core.cache import cache
 from django.test import Client, TestCase, override_settings
@@ -133,7 +134,10 @@ class ApiContractTests(TestCase):
         self.assertEqual(response.json()["order"]["status"], "confirmed")
 
 
-@override_settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
+@override_settings(
+    EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend",
+    GOOGLE_OAUTH_CLIENT_IDS=["test-google-client"],
+)
 class AuthApiTests(TestCase):
     def setUp(self):
         cache.clear()
@@ -149,6 +153,20 @@ class AuthApiTests(TestCase):
         payload.update(overrides)
         with patch.dict("api.views_auth.FC", {"otp_show_code": True, "otp_resend_seconds": 0}):
             return self.client.post("/api/v1/auth/register", data=payload, content_type="application/json")
+
+    def _google_login(self, *, phone=None, sub="google-sub-123", email="google.customer@example.com", name="Google Customer"):
+        claims = {
+            "sub": sub,
+            "email": email,
+            "email_verified": True,
+            "name": name,
+        }
+        token = jwt.encode({"aud": "test-google-client", "sub": sub}, "test-only-google-token-signing-key-32chars", algorithm="HS256")
+        payload = {"id_token": token}
+        if phone is not None:
+            payload["phone"] = phone
+        with patch("api.views_auth.google_id_token.verify_oauth2_token", return_value=claims):
+            return self.client.post("/api/v1/auth/google", data=payload, content_type="application/json")
 
     def test_registration_sends_confirmation_email_and_persists_account(self):
         response = self._register()
@@ -237,6 +255,60 @@ class AuthApiTests(TestCase):
         )
         self.assertEqual(reset.status_code, 200)
         self.assertTrue(User.objects.get(phone="+256700912345").check_password("NewFuel@2026"))
+
+    def test_google_login_creates_a_verified_account_after_phone_completion(self):
+        challenge = self._google_login()
+        self.assertEqual(challenge.status_code, 200)
+        self.assertTrue(challenge.json()["phone_required"])
+        self.assertFalse(User.objects.exists())
+
+        response = self._google_login(phone="+256700912399")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("token", data)
+        user = User.objects.get(google_sub="google-sub-123")
+        self.assertEqual(user.phone, "+256700912399")
+        self.assertEqual(user.email, "google.customer@example.com")
+        self.assertTrue(user.is_verified)
+        self.assertFalse(user.has_usable_password())
+        profile = Client().get("/api/v1/me", HTTP_AUTHORIZATION=f"Bearer {data['token']}")
+        self.assertEqual(profile.status_code, 200)
+
+    def test_google_login_links_an_existing_email_and_is_repeatable(self):
+        user = User.objects.create_user(
+            phone="+256700912398",
+            password=PASSWORD,
+            name="Existing Customer",
+            email="google.customer@example.com",
+            is_verified=False,
+        )
+        first = self._google_login()
+        self.assertEqual(first.status_code, 200)
+        user.refresh_from_db()
+        self.assertEqual(user.google_sub, "google-sub-123")
+        self.assertTrue(user.is_verified)
+        self.assertTrue(user.check_password(PASSWORD))
+
+        second = self._google_login()
+        self.assertEqual(second.status_code, 200)
+        self.assertEqual(second.json()["user"]["id"], user.pk)
+        self.assertEqual(User.objects.count(), 1)
+
+    def test_google_login_rejects_an_unaccepted_audience(self):
+        token = jwt.encode({"aud": "another-app", "sub": "google-sub-123"}, "test-only-google-token-signing-key-32chars", algorithm="HS256")
+        response = self.client.post(
+            "/api/v1/auth/google",
+            data={"id_token": token},
+            content_type="application/json",
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertFalse(User.objects.exists())
+
+    def test_google_login_rejects_a_phone_that_already_belongs_to_another_account(self):
+        User.objects.create_user(phone="+256700912397", name="Phone Owner")
+        response = self._google_login(phone="+256700912397")
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(User.objects.count(), 1)
 
     def test_flutter_web_origin_can_call_the_auth_api(self):
         response = self.client.options(

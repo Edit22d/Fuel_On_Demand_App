@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../core/core.dart';
 import '../services/auth_service.dart';
+import '../services/google_sign_in_button_stub.dart'
+    if (dart.library.js_interop) '../services/google_sign_in_button_web.dart';
 import '../services/location_service.dart';
 import 'sheets.dart';
 
@@ -399,10 +401,23 @@ class _LoginScreenState extends State<LoginScreen> {
   final _phone = TextEditingController();
   final _pass = TextEditingController();
   String? _phoneErr, _passErr, _formErr;
-  bool _busy = false;
+  bool _busy = false, _googleBusy = false;
+  StreamSubscription<String?>? _googleAccountSub;
+
+  @override
+  void initState() {
+    super.initState();
+    if (auth.googleUsesWebButton) {
+      _googleAccountSub = auth.googleIdTokenEvents.listen(
+        _onGoogleToken,
+        onError: _onGoogleError,
+      );
+    }
+  }
 
   @override
   void dispose() {
+    _googleAccountSub?.cancel();
     _phone.dispose();
     _pass.dispose();
     super.dispose();
@@ -423,8 +438,57 @@ class _LoginScreenState extends State<LoginScreen> {
       setState(() => _formErr = r.error);
       return;
     }
-    widget.go(r.otpRequired ? Screen.otp : Screen.locationAccess,
-        replace: true);
+    if (r.otpRequired) {
+      widget.go(Screen.otp, replace: true);
+    } else {
+      widget.go(Screen.locationAccess, root: true);
+    }
+  }
+
+  void _onGoogleToken(String? token) {
+    if (!mounted || _busy || _googleBusy) return;
+    if (token == null || token.isEmpty) {
+      setState(() => _formErr =
+          'Google did not return a sign-in token. Please try again.');
+      return;
+    }
+    unawaited(_completeGoogle(token));
+  }
+
+  void _onGoogleError(Object error) {
+    if (!mounted) return;
+    setState(() => _formErr = error.toString());
+  }
+
+  Future<void> _google() => _completeGoogle();
+
+  Future<void> _completeGoogle([String? idToken]) async {
+    if (_busy || _googleBusy) return;
+    setState(() {
+      _googleBusy = true;
+      _formErr = null;
+    });
+    var result = await auth.signInWithGoogle(idToken: idToken);
+    if (!mounted) return;
+    if (result.phoneRequired) {
+      final phone =
+          await showGooglePhoneSheet(context, result.googleEmail ?? '');
+      if (!mounted) return;
+      if (phone == null) {
+        await auth.cancelGoogleSignIn();
+        if (!mounted) return;
+        setState(() => _googleBusy = false);
+        return;
+      }
+      result = await auth.signInWithGoogle(phone: phone);
+      if (!mounted) return;
+    }
+    setState(() => _googleBusy = false);
+    if (!result.ok) {
+      setState(() => _formErr = result.error);
+      return;
+    }
+    widget.go(Screen.locationAccess, root: true);
   }
 
   @override
@@ -432,8 +496,10 @@ class _LoginScreenState extends State<LoginScreen> {
     return _AuthLayout(onBack: () => app.backOr(Screen.onboarding), children: [
       FcText('WELCOME BACK', kind: Tx.label, color: FC.gold),
       const FcText('Sign in to FuelOnDemand', kind: Tx.title),
-      FcText('Fuel from trusted stations, delivered wherever you are.',
-          color: FC.muted),
+      FcText(
+        'Fuel from trusted stations, delivered wherever you are.',
+        color: FC.muted,
+      ),
       FcField(
           label: 'Phone number',
           hint: '+256 700 123 456',
@@ -457,16 +523,94 @@ class _LoginScreenState extends State<LoginScreen> {
           child: TextAction('Forgot password?',
               onTap: () => widget.go(Screen.forgot))),
       if (_formErr != null) FormError(_formErr!),
-      FcButton('Sign in securely', loading: _busy, onTap: _submit),
+      FcButton('Sign in securely',
+          loading: _busy, onTap: _busy || _googleBusy ? null : _submit),
       const _Divider('or continue with'),
-      FcButton('Continue with Google',
-          variant: BV.outline,
-          onTap: () =>
-              toast(context, 'Google sign-in is not enabled for this build.')),
+      if (auth.googleUsesWebButton)
+        AbsorbPointer(
+          absorbing: _busy || _googleBusy,
+          child: SizedBox(
+            height: 44,
+            child: _googleBusy
+                ? const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  )
+                : buildGoogleSignInButton(),
+          ),
+        )
+      else
+        FcButton('Continue with Google',
+            variant: BV.outline,
+            loading: _googleBusy,
+            onTap: _busy || _googleBusy ? null : _google),
       _InlineLink('New to FuelOnDemand?', 'Create account',
           () => widget.go(Screen.signup)),
     ]);
   }
+}
+
+Future<String?> showGooglePhoneSheet(BuildContext context, String email) =>
+    showFcSheet<String>(
+      context,
+      title: 'Add your phone number',
+      builder: (_) => _GooglePhoneForm(email: email),
+    );
+
+class _GooglePhoneForm extends StatefulWidget {
+  final String email;
+  const _GooglePhoneForm({required this.email});
+
+  @override
+  State<_GooglePhoneForm> createState() => _GooglePhoneFormState();
+}
+
+class _GooglePhoneFormState extends State<_GooglePhoneForm> {
+  final _phone = TextEditingController();
+  String? _error;
+
+  void _continue() {
+    final normalized = Validators.normalizePhone(_phone.text);
+    if (normalized == null) {
+      setState(() => _error = 'Enter a valid Uganda phone number.');
+      return;
+    }
+    Navigator.of(context).pop(normalized);
+  }
+
+  @override
+  void dispose() {
+    _phone.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (widget.email.isNotEmpty) ...[
+          FcText('Signed in as ${widget.email}',
+              kind: Tx.caption, color: FC.muted),
+          const SizedBox(height: 14),
+        ],
+        FcText(
+            'Use your Uganda mobile number for delivery updates and account recovery.',
+            color: FC.muted),
+        const SizedBox(height: 16),
+        FcField(
+            label: 'Phone number',
+            hint: '+256 700 123 456',
+            icon: IconName.phone,
+            controller: _phone,
+            keyboard: TextInputType.phone,
+            error: _error,
+            action: TextInputAction.done,
+            onSubmitted: (_) => _continue()),
+        const SizedBox(height: 18),
+        FcButton('Continue', onTap: _continue),
+      ]);
 }
 
 // ===========================================================================
@@ -522,8 +666,11 @@ class _SignupScreenState extends State<SignupScreen> {
       setState(() => _formErr = r.error);
       return;
     }
-    widget.go(r.otpRequired ? Screen.otp : Screen.locationAccess,
-        replace: true);
+    if (r.otpRequired) {
+      widget.go(Screen.otp, replace: true);
+    } else {
+      widget.go(Screen.locationAccess, root: true);
+    }
   }
 
   @override
@@ -803,10 +950,11 @@ class _OtpScreenState extends State<OtpScreen> {
     _tick = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
+    final hadPendingChallenge = auth.hasPending;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      if (!auth.hasPending) {
-        widget.go(Screen.login, replace: true);
+      if (!mounted || app.current != Screen.otp) return;
+      if (!hadPendingChallenge) {
+        widget.go(Screen.login, root: true);
         return;
       }
       _announce();
@@ -840,9 +988,11 @@ class _OtpScreenState extends State<OtpScreen> {
     });
     final r = await auth.verifyOtp(code);
     if (!mounted) return;
-    setState(() => _busy = false);
     if (!r.ok) {
-      setState(() => _error = r.error);
+      setState(() {
+        _busy = false;
+        _error = r.error;
+      });
       _ctrl.clear();
       _focus.requestFocus();
       return;
@@ -852,6 +1002,7 @@ class _OtpScreenState extends State<OtpScreen> {
         r.purpose == OtpPurpose.reset
             ? Screen.newPassword
             : Screen.locationAccess,
+        root: r.purpose != OtpPurpose.reset,
         replace: true);
   }
 

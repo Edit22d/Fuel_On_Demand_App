@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api_client.dart';
+import 'google_auth_service.dart';
 
 enum OtpPurpose { login, signup, reset }
 
@@ -25,6 +26,8 @@ class AuthResult {
   final String? error;
   final OtpPurpose? purpose;
   final bool otpRequired;
+  final bool phoneRequired;
+  final String? googleEmail;
   final bool confirmationSent;
   final String? destination;
   final int expiresIn;
@@ -34,6 +37,8 @@ class AuthResult {
       : ok = true,
         error = null,
         otpRequired = false,
+        phoneRequired = false,
+        googleEmail = null,
         confirmationSent = false,
         destination = null,
         expiresIn = 0,
@@ -47,12 +52,28 @@ class AuthResult {
     required this.resendIn,
   })  : ok = true,
         error = null,
-        otpRequired = true;
+        otpRequired = true,
+        phoneRequired = false,
+        googleEmail = null;
+
+  const AuthResult.googlePhoneRequired(String email)
+      : ok = true,
+        error = null,
+        purpose = null,
+        otpRequired = false,
+        phoneRequired = true,
+        googleEmail = email,
+        confirmationSent = false,
+        destination = email,
+        expiresIn = 0,
+        resendIn = 0;
 
   const AuthResult.fail(this.error)
       : ok = false,
         purpose = null,
         otpRequired = false,
+        phoneRequired = false,
+        googleEmail = null,
         confirmationSent = false,
         destination = null,
         expiresIn = 0,
@@ -187,6 +208,7 @@ class AuthService {
   static const _profileKey = 'fc_session_user_v1';
 
   final ApiClient _api;
+  final GoogleAuthService _google;
   final Profile profile = Profile('', '', '');
   Profile? current;
 
@@ -203,10 +225,16 @@ class AuthService {
   bool resetVerified = false;
   String? resetPhone;
   String? _resetToken;
+  String? _pendingGoogleToken;
 
-  AuthService({ApiClient? api}) : _api = api ?? ApiClient.instance;
+  AuthService({ApiClient? api, GoogleAuthService? googleAuth})
+      : _api = api ?? ApiClient.instance,
+        _google = googleAuth ?? GoogleAuthService();
 
   bool get isAuthenticated => current != null && _api.hasToken;
+  bool get googleConfigured => _google.isConfigured;
+  bool get googleUsesWebButton => _google.usesWebButton;
+  Stream<String?> get googleIdTokenEvents => _google.idTokenEvents;
   bool get hasPending => purpose != null && pendingPhone != null;
 
   Future<void> init() async {
@@ -274,6 +302,9 @@ class AuthService {
 
   AuthResult _failure(Object error) {
     if (error is ApiException) {
+      return AuthResult.fail(error.message);
+    }
+    if (error is GoogleAuthException) {
       return AuthResult.fail(error.message);
     }
     return const AuthResult.fail(
@@ -361,6 +392,53 @@ class AuthService {
       return await _sessionOrChallenge(response, OtpPurpose.signup);
     } catch (error) {
       return _failure(error);
+    }
+  }
+
+  Future<AuthResult> signInWithGoogle({String? phone, String? idToken}) async {
+    if (!_google.isConfigured) {
+      return const AuthResult.fail(
+          'Google sign-in is not configured. Add GOOGLE_SERVER_CLIENT_ID for Android or GOOGLE_CLIENT_ID for web/iOS to the app build.');
+    }
+    if (phone != null && Validators.normalizePhone(phone) == null) {
+      return const AuthResult.fail('Enter a valid Uganda phone number.');
+    }
+    try {
+      final token = idToken ?? _pendingGoogleToken ?? await _google.idToken();
+      if (token == null || token.isEmpty) {
+        return const AuthResult.fail('Google sign-in was cancelled.');
+      }
+      _pendingGoogleToken = token;
+      final normalized =
+          phone == null ? null : Validators.normalizePhone(phone);
+      final response = await _api.post('/auth/google', body: {
+        'id_token': token,
+        if (normalized != null) 'phone': normalized,
+      });
+      if (response is Map && response['phone_required'] == true) {
+        return AuthResult.googlePhoneRequired(
+            response['email']?.toString() ?? '');
+      }
+      if (response is Map && response['token'] is String) {
+        await _saveSession(response['token'] as String, _userMap(response));
+        _pendingGoogleToken = null;
+        return const AuthResult.ok();
+      }
+      _pendingGoogleToken = null;
+      return const AuthResult.fail(
+          'Google sign-in could not be completed. Please try again.');
+    } catch (error) {
+      _pendingGoogleToken = null;
+      return _failure(error);
+    }
+  }
+
+  Future<void> cancelGoogleSignIn() async {
+    _pendingGoogleToken = null;
+    try {
+      await _google.signOut();
+    } catch (_) {
+      // Cancelling phone completion must still dismiss the sheet.
     }
   }
 
@@ -501,6 +579,11 @@ class AuthService {
     } catch (_) {
       // Local sign-out must still succeed when the network is unavailable.
     }
+    try {
+      await _google.signOut();
+    } catch (_) {
+      // Google sign-out is best-effort; local sign-out must always succeed.
+    }
     await _api.clearToken();
     await _clearLocal();
   }
@@ -519,6 +602,7 @@ class AuthService {
     resetVerified = false;
     resetPhone = null;
     _resetToken = null;
+    _pendingGoogleToken = null;
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_profileKey);
   }

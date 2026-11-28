@@ -9,6 +9,7 @@ urlpatterns = [
     # auth + profile
     path("auth/register", auth.register),
     path("auth/login", auth.login),
+    path("auth/google", auth.google_login),
     path("auth/otp/send", auth.otp_send),
     path("auth/otp/verify", auth.otp_verify),
     path("auth/forgot", auth.forgot),
